@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Number Systems Interactive</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #f72585;
+            --success: #4cc9f0;
+            --bg: #f8f9fc;
+            --glass: rgba(255, 255, 255, 0.95);
+        }
+
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: #2b2d42;
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+
+        /* --- Branding Overlay --- */
+        #branding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        #branding-overlay img {
+            max-width: 280px;
+            width: 60%;
+            animation: bounceIn 1s ease;
+        }
+
+        @keyframes bounceIn {
+            0% { transform: scale(0.3); opacity: 0; }
+            50% { transform: scale(1.05); opacity: 1; }
+            70% { transform: scale(0.9); }
+            100% { transform: scale(1); }
+        }
+
+        /* --- Main Container --- */
+        .quiz-container {
+            width: 92%;
+            max-width: 550px;
+            background: var(--glass);
+            padding: 40px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            position: relative;
+            border: 1px solid rgba(255,255,255,0.3);
+        }
+
+        .hidden { display: none !important; }
+
+        /* --- UI Elements --- */
+        h1 { color: var(--primary); font-size: 1.8rem; margin-bottom: 8px; }
+        .meta-info { font-size: 0.9rem; color: #6c757d; margin-bottom: 25px; text-transform: uppercase; letter-spacing: 1px; }
+
+        .header-stats {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            background: #f1f3f9;
+            padding: 10px 20px;
+            border-radius: 50px;
+        }
+
+        .timer-pill {
+            background: var(--accent);
+            color: white;
+            padding: 4px 15px;
+            border-radius: 20px;
+            font-weight: bold;
+        }
+
+        button {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white;
+            border: none;
+            padding: 16px 24px;
+            margin: 10px 0;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 15px rgba(67, 97, 238, 0.3);
+        }
+
+        button:hover { transform: translateY(-2px); box-shadow: 0 8px 20px rgba(67, 97, 238, 0.4); }
+
+        .option-btn {
+            background: white;
+            color: #4a4e69;
+            text-align: left;
+            border: 2px solid #edf2fb;
+            box-shadow: none;
+        }
+
+        .option-btn:hover { border-color: var(--primary); background: #f8f9ff; color: var(--primary); }
+
+        .q-image {
+            max-width: 100%;
+            height: auto;
+            border-radius: 12px;
+            margin: 15px 0;
+            border: 4px solid #fff;
+            box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        }
+
+        #feedback {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 12px;
+            font-weight: 500;
+            animation: fadeIn 0.4s ease;
+        }
+
+        .correct-fb { background: #d8f3dc; color: #1b4332; border: 1px solid #b7e4c7; }
+        .wrong-fb { background: #fee2e2; color: #991b1b; border: 1px solid #fecaca; }
+
+        canvas#confetti-canvas {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 5000;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="branding-overlay">
+        <img src="assets/innovine-logo.png" alt="Innovine Logo" onerror="this.src='https://via.placeholder.com/300x100?text=Innovine+Solutions'">
+    </div>
+
+    <div id="intro-screen" class="quiz-container hidden">
+        <div class="meta-info">Grade 5 • ICT • Chapter 2</div>
+        <h1>Number Systems</h1>
+        <p>Master Binary, Octal, and Hexadecimal through 12 real-world challenges.</p>
+        <button onclick="startQuiz()">Get Started</button>
+    </div>
+
+    <div id="quiz-screen" class="quiz-container hidden">
+        <div class="header-stats">
+            <span id="score-text">Score: 0</span>
+            <span class="timer-pill" id="timer-display">45s</span>
+            <span id="mute-toggle" onclick="toggleMute()" style="cursor:pointer">🔊</span>
+        </div>
+        <h3 id="question-text" style="margin-top:0"></h3>
+        <div id="image-space"></div>
+        <div id="options-stack"></div>
+        <div id="feedback" class="hidden"></div>
+    </div>
+
+    <div id="result-screen" class="quiz-container hidden">
+        <h2>Challenge Complete!</h2>
+        <h1 id="final-score" style="font-size: 3.5rem; margin: 10px 0;">0/12</h1>
+        <p id="result-msg" style="font-weight: 600; font-size: 1.2rem;"></p>
+        <button onclick="location.reload()">Restart Challenge</button>
+    </div>
+
+    <audio id="snd-right" src="assets/correct.mp3"></audio>
+    <audio id="snd-wrong" src="assets/wrong.mp3"></audio>
+
+    <script>
+        const questions = [
+            { q: "A student makes a 'Binary Bracelet' for 9. Black='0', White='1'. Pattern?", options: ["White, Black, Black, White (1001)", "White, White, Black, Black (1100)", "Black, White, White, Black (0110)", "White, Black, White, Black (1010)"], correct: 0, hint: "Binary 9 is 8 + 1.", expl: "9 in binary is 1001. White represents 1." },
+            { q: "A teacher writes the common number bases used in computer science on the board. Which of these bases does NOT belong?", options: ["Base 2", "Base 8", "Base 10", "Base 12"], correct: 3, hint: "Think of powers of 2.", expl: "Base 12 is not a standard computer base." },
+            // Locate this object in your code and change the image property:
+{ 
+    q: "A digital artist is using the hexadecimal color code shown above, which contains the letter 'F'. What decimal value does the letter 'F' represent?", 
+    options: ["10", "14", "15", "16"], 
+    correct: 2, 
+    image: "assets/G5_Chapter 2_Q2.png", // <--- Updated to include assets/ folder
+    hint: "Hex counts 9, A, B, C, D, E, F.", 
+    expl: "F is the 16th value (0-15), so it represents 15." 
+},
+            { q: "Assertion: Hexadecimal is used over binary. Reason: 1 hex digit = 4 binary bits.", options: ["Both are true & Reason explains Statement", "Both true but Reason doesn't explain", "Statement true, Reason false", "Statement false, Reason true"], correct: 0, hint: "Is hex more compact?", expl: "Hex represents 4 bits, making long codes easier to read." },
+            { q: "Seema's remainders for decimal 10 are 0, 1, 0, 1. She writes 0101. Mistake?", options: ["Wrong base", "Read right-to-left instead of left-to-right", "Calculation error", "Multiplied instead of divided"], correct: 1, hint: "Binary is read from the last remainder to the first.", expl: "The correct binary for 10 is 1010 (read upwards)." },
+            { q: "Gate A has (101)₂ people, Gate B has (010)₂. Total in binary?", options: ["100", "011", "110", "111"], correct: 3, hint: "5 + 2 = 7. What is 7 in binary?", expl: "101 + 010 = 111." },
+            { q: "A computer generates a binary error code of (1100)₂. To look it up in the manual, a technician converts it to a decimal number. What is the decimal code?", options: ["8", "10", "12", "14"], correct: 2, hint: "Sum (1x8) + (1x4).", expl: "1100 is 8 + 4 = 12." },
+            { q: "A toy drone's total battery life is represented in binary as (1111)₂ minutes. It flies a short mission that takes (0101)₂ minutes. Using binary subtraction, how many minutes of battery life remain?", options: ["1001", "1010", "1100", "0101"], correct: 1, hint: "Subtract: 15 - 5 = 10.", expl: "1111 - 0101 = 1010." },
+            { q: "A system engineer configures file permissions using the Octal number system, which helps simplify manual calculations. How many binary digits (bits) does a single Octal digit represent?", options: ["2 bits", "3 bits", "4 bits", "8 bits"], correct: 1, hint: "2 to the power of what is 8?", expl: "Octal is base 8, and 2³ = 8, so it uses 3 bits." },
+            { q: "A student types an octal number into a program as (482)₈. Why will the computer reject this input?", options: ["Too long", "Digit '8' is invalid for base-8", "Must be 0 or 1", "Missing prefix"], correct: 1, hint: "What is the max digit in Base 8?", expl: "Octal only uses digits 0 to 7." },
+            { q: "A game developer wants to assign the decimal ID 26 to a player. To save memory, she converts it into Hexadecimal. What is the correct hex ID?", options: ["1A", "1B", "18", "20"], correct: 0, hint: "26 = (1x16) + 10.", expl: "10 is 'A' in Hex, so 26 is 1A." },
+            { q: "A processor calculates the area of a microchip. The length is given as (10)₂ units and the width as (11)₂ units. Using binary multiplication, what is the area of the chip?", options: ["101", "110", "100", "111"], correct: 1, hint: "2 x 3 = 6.", expl: "6 in binary is 110." }
+        ];
+
+        let cur = 0, score = 0, time = 45, timer, attempts = 0, muted = false;
+
+        // --- Forced Branding Timer ---
+        window.onload = () => {
+            setTimeout(() => {
+                document.getElementById('branding-overlay').style.transform = 'translateY(-100%)';
+                document.getElementById('intro-screen').classList.remove('hidden');
+            }, 5000);
+        };
+
+        function startQuiz() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            loadQ();
+        }
+
+        function loadQ() {
+            const data = questions[cur];
+            attempts = 0; time = 45;
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('question-text').innerText = `Q${cur+1}. ${data.q}`;
+            document.getElementById('image-space').innerHTML = data.image ? `<img src="${data.image}" class="q-image">` : '';
+            
+            const stack = document.getElementById('options-stack');
+            stack.innerHTML = '';
+            data.options.forEach((o, i) => {
+                const b = document.createElement('button');
+                b.className = 'option-btn';
+                b.innerText = o;
+                b.onclick = () => check(i);
+                stack.appendChild(b);
+            });
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            document.getElementById('timer-display').innerText = time + 's';
+            timer = setInterval(() => {
+                time--;
+                document.getElementById('timer-display').innerText = time + 's';
+                if(time <= 0) { clearInterval(timer); check(-1); }
+            }, 1000);
+        }
+
+        function check(idx) {
+            const data = questions[cur];
+            const fb = document.getElementById('feedback');
+            fb.classList.remove('hidden');
+
+            if(idx === data.correct) {
+                clearInterval(timer);
+                score++;
+                if(!muted) document.getElementById('snd-right').play();
+                fb.className = 'correct-fb';
+                fb.innerText = "Fantastic! That's correct.";
+                document.getElementById('score-text').innerText = `Score: ${score}`;
+                triggerConfetti();
+                setTimeout(next, 2000);
+            } else {
+                attempts++;
+                if(!muted) document.getElementById('snd-wrong').play();
+                if(attempts === 1 && idx !== -1) {
+                    fb.className = 'wrong-fb';
+                    fb.innerText = "Not quite! Hint: " + data.hint;
+                } else {
+                    clearInterval(timer);
+                    fb.className = 'wrong-fb';
+                    fb.innerText = `Correct Answer: ${data.options[data.correct]}. ${data.expl}`;
+                    setTimeout(next, 4000);
+                }
+            }
+        }
+
+        function next() {
+            cur++;
+            if(cur < questions.length) loadQ();
+            else showFinal();
+        }
+
+        function showFinal() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            document.getElementById('final-score').innerText = `${score}/${questions.length}`;
+            const pct = (score/questions.length)*100;
+            document.getElementById('result-msg').innerText = pct >= 75 ? "Good job!" : (pct >= 40 ? "Review and try again." : "Let’s practise more.");
+        }
+
+        function toggleMute() {
+            muted = !muted;
+            document.getElementById('mute-toggle').innerText = muted ? "🔇" : "🔊";
+        }
+
+        // --- Internal Confetti Logic ---
+        function triggerConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            let pieces = [];
+            for(let i=0; i<50; i++) {
+                pieces.push({
+                    x: Math.random()*canvas.width,
+                    y: Math.random()*canvas.height - canvas.height,
+                    r: Math.random()*6 + 4,
+                    d: Math.random()*15,
+                    color: `hsl(${Math.random()*360}, 70%, 50%)`,
+                    v: Math.random()*3 + 2
+                });
+            }
+            function draw() {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                pieces.forEach(p => {
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                    ctx.fillStyle = p.color; ctx.fill();
+                    p.y += p.v; p.x += Math.sin(p.d);
+                });
+                if(pieces[0].y < canvas.height) requestAnimationFrame(draw);
+                else ctx.clearRect(0,0,canvas.width, canvas.height);
+            }
+            draw();
+        }
+    </script>
+</body>
+</html>
