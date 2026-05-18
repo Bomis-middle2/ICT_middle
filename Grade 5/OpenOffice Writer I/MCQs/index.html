@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mail Merge Master - Grade 5</title>
+    <style>
+        :root {
+            --primary: #4361ee;
+            --secondary: #3f37c9;
+            --accent: #f72585;
+            --glass: rgba(255, 255, 255, 0.95);
+            --text: #2b2d42;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background: linear-gradient(135deg, #e0eafc 0%, #cfdef3 100%);
+            color: var(--text);
+            margin: 0;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-y: auto;
+            padding: 20px 0;
+            box-sizing: border-box;
+        }
+
+        /* Branding Overlay */
+        #branding-overlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: #ffffff;
+            display: flex; justify-content: center; align-items: center;
+            z-index: 10000;
+            transition: transform 0.8s cubic-bezier(0.77, 0, 0.175, 1);
+        }
+
+        #branding-overlay img { max-width: 280px; width: 60%; animation: pulse 2s infinite; }
+        @keyframes pulse { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+
+        .quiz-container {
+            width: 92%;
+            max-width: 580px;
+            background: var(--glass);
+            padding: 35px 30px;
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.08);
+            backdrop-filter: blur(10px);
+            text-align: center;
+            border: 1px solid rgba(255,255,255,0.4);
+            box-sizing: border-box;
+            position: relative;
+        }
+
+        .hidden { display: none !important; }
+
+        .header-stats {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 25px; background: #f1f3f9;
+            padding: 10px 20px; border-radius: 50px;
+            font-size: 0.95rem;
+            font-weight: 600;
+        }
+
+        .timer-pill { background: var(--accent); color: white; padding: 4px 15px; border-radius: 20px; font-weight: bold; }
+
+        /* --- Specific & Attractive Question Font Styling --- */
+        h3#question-text {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif !important;
+            font-size: 1.45rem !important;
+            font-weight: 700 !important;
+            line-height: 1.5 !important;
+            color: #1a1c29 !important;
+            margin: 0 auto 22px auto !important;
+            text-align: center !important;
+            max-width: 100%;
+            letter-spacing: -0.01em;
+            display: block;
+        }
+
+        button {
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            color: white; border: none; padding: 16px; margin: 8px 0;
+            border-radius: 14px; font-size: 1rem; font-weight: 600;
+            cursor: pointer; width: 100%; transition: 0.3s;
+        }
+
+        button:hover { transform: translateY(-2px); filter: brightness(1.1); }
+
+        .option-btn {
+            background: white; color: #4a4e69; text-align: left;
+            border: 2px solid #edf2fb;
+            padding: 16px 20px;
+            font-size: 0.98rem;
+        }
+
+        .option-btn:hover { border-color: var(--primary); background: #f8f9ff; }
+
+        .q-image { 
+            max-width: 100%; 
+            height: auto; 
+            border-radius: 12px; 
+            margin: 20px 0; 
+            border: 1px solid #ddd;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* --- Table Styling & Perfect Alignment --- */
+        .q-table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 20px 0;
+            font-size: 0.95rem;
+            text-align: left;
+            background: white;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.04);
+            border-radius: 8px;
+            overflow: hidden;
+        }
+        .q-table th, .q-table td {
+            border: 1px solid #e2e8f0;
+            padding: 12px 16px;
+        }
+        .q-table th {
+            background-color: #f8fafc;
+            color: #4a5568;
+            font-weight: 700;
+        }
+        .q-table td {
+            color: #2d3748;
+        }
+
+        #feedback { margin-top: 20px; padding: 15px; border-radius: 12px; font-weight: 600; font-size: 1rem; }
+        .correct-fb { background: #d8f3dc; color: #1b4332; }
+        .wrong-fb { background: #fee2e2; color: #991b1b; }
+
+        canvas#confetti-canvas {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 5000;
+        }
+    </style>
+</head>
+<body>
+
+    <canvas id="confetti-canvas"></canvas>
+
+    <div id="branding-overlay">
+        <img src="assets/innovine-logo.png" alt="Innovine Logo">
+    </div>
+
+    <div id="intro-screen" class="quiz-container hidden">
+        <div class="meta-info" style="font-weight:600; color:var(--primary); margin-bottom:10px;">Grade 5 • ICT • Chapter 3</div>
+        <h1 style="font-size:2.2rem; margin-top:0;">Mail Merge Challenge</h1>
+        <p>Master the tools for mass personalization!</p>
+        <p><strong>11 Questions</strong> | <strong>45s per Question</strong></p>
+        <button onclick="startQuiz()">Begin Quiz</button>
+    </div>
+
+    <div id="quiz-screen" class="quiz-container hidden">
+        <div class="header-stats">
+            <span id="score-text">Score: 0</span>
+            <span class="timer-pill" id="timer-display">45s</span>
+            <span id="mute-toggle" onclick="toggleMute()" style="cursor:pointer">🔊</span>
+        </div>
+        <h3 id="question-text"></h3>
+        <div id="image-space"></div>
+        <div id="options-stack"></div>
+        <div id="feedback" class="hidden"></div>
+    </div>
+
+    <div id="result-screen" class="quiz-container hidden">
+        <h2>Quiz Complete</h2>
+        <h1 id="final-score" style="font-size: 3.5rem; margin: 10px 0;">0/11</h1>
+        <p id="result-msg" style="font-size:1.1rem; font-weight:600;"></p>
+        <button onclick="location.reload()">Restart</button>
+    </div>
+
+    <audio id="snd-correct" src="assets/correct.mp3"></audio>
+    <audio id="snd-wrong" src="assets/wrong.mp3"></audio>
+
+    <script>
+        const questions = [
+            { q: "Rahul wants to send a birthday invite to 20 friends. Instead of typing each name manually, which feature should he use?", options: ["Spell Check", "Find and Replace", "Mail Merge", "Document Formatting"], correct: 2, hint: "It combines a document with a list.", expl: "Mail Merge is used to create multiple personalized documents at once." },
+            { 
+                q: "In the table below, what is the complete row of information about Amit called in Mail Merge?", 
+                table: `<table class="q-table">
+                            <thead>
+                                <tr>
+                                    <th>Name</th>
+                                    <th>Address</th>
+                                    <th>Pin Code</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                <tr>
+                                    <td>Amit</td>
+                                    <td>Navi Mumbai</td>
+                                    <td>410209</td>
+                                </tr>
+                                <tr>
+                                    <td>Geeta</td>
+                                    <td>Shimla</td>
+                                    <td>412345</td>
+                                </tr>
+                            </tbody>
+                        </table>`,
+                options: ["A Field", "A Record", "A Main Document", "A Salutation"], 
+                correct: 1, 
+                hint: "It's the whole set for one entity.", 
+                expl: "A Record is a collection of fields for a single person or item." 
+            },
+            { q: "Statement: Mail Merge makes business letters look professional. Reason: It adds specific names instead of 'Dear Customer'.", options: ["Both true, Reason explains Statement", "Both true, Reason doesn't explain", "Statement true, Reason false", "Statement false, Reason true"], correct: 0, hint: "Does personalization help?", expl: "Personalizing letters makes them more engaging and professional." },
+            { q: "Priya is typing recipient details into the 'New Address List' dialog box. To move quickly to the next field (e.g., from 'First Name' to 'Last Name'), she presses the 'Enter' key, but it doesn't work. Which key should she press instead?", options: ["Enter", "Spacebar", "Escape", "Tab"], correct: 3, hint: "Standard key for table navigation.", expl: "The Tab key moves the cursor to the next data entry field." },
+            { q: "A teacher creates a common text letter for parents. This is called the Main Document. She also creates a separate list of the parents' addresses, called the Data Source. When she combines these two, what is the resulting file called?", options: ["Merged Document", "Data Source", "Mailing List", "Main Document"], correct: 0, hint: "The finished collection of letters.", expl: "The Merged Document contains all individual personalized pages." },
+            { q: "A student is memorising the steps of the Mail Merge Wizard. Which of these is NOT a standard step in the Mail Merge process?", options: ["Select document type", "Create a data source", "Insert page border", "Preview the letters"], correct: 2, hint: "One is decoration, not function.", expl: "Page borders are formatting choices, not part of the merge wizard." },
+            { q: "Rohan already has a large list of customer addresses saved in a Spreadsheet program (like Excel). Does he need to retype all of them into the word processor's address list to use Mail Merge?", options: ["Yes, Mail Merge only accepts lists typed directly into the wizard.", "No, he can use spreadsheet or database files directly as a Data Source.", "No, Excel is only for math", "No, but he must convert the spreadsheet into an image first."], correct: 1, hint: "It works with external list files.", expl: "Autolists from Excel or databases can be used immediately." },
+            { q: "While using the Mail Merge wizard, the system shows a 'Match Fields' dialog box. What is the main purpose of this step?", options: ["Change color", "Align wizard elements with Data Source columns", "Check spelling", "Delete duplicates"], correct: 1, image: "assets/G5_Chapter 3 Q8.png", hint: "It maps your column names to the wizard.", expl: "Match Fields ensures the software knows which column is 'Name' or 'City'." },
+            { q: "A company manager wants to send letters with different greetings for male and female employees (e.g., 'Dear Mr.' and 'Dear Ms.'). Which step in the Mail Merge Wizard helps him set this up automatically based on a 'Sex' field?", options: ["Insert Picture", "Insert Table", "Create salutation", "Edit Header"], correct: 2, hint: "A formal greeting.", expl: "The 'Create salutation' step allows you to set up greetings." },
+            { q: "An HR manager wants to skip one candidate from a list without deleting the file. How?", options: ["Use 'Exclude this recipient'", "Delete the database", "Print and discard", "Change to Email"], correct: 0, hint: "Look for an option in the preview stage.", expl: "'Exclude this recipient' lets you skip specific people." },
+            { q: "At the final step (Step 8: Save, Print or Send), a school principal wants to keep a digital copy of all 50 personalised student letters in one single computer file so he can print them tomorrow. Which option must he select?", options: ["Save starting document", "Send as Email", "Print merged document", "Save merged document"], correct: 3, hint: "He needs a digital file of all finished letters.", expl: "Saving the merged document creates a file with all individual letters." }
+        ];
+
+        let cur = 0, score = 0, time = 45, timer, attempts = 0, muted = false, confettiID;
+
+        window.addEventListener('load', () => {
+            setTimeout(() => {
+                document.getElementById('branding-overlay').style.transform = 'translateY(-100%)';
+                /* FIXED: Corrected ID reference from 'intro-card' to 'intro-screen' */
+                document.getElementById('intro-screen').classList.remove('hidden');
+            }, 5000);
+        });
+
+        function startQuiz() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            loadQ();
+        }
+
+        function loadQ() {
+            stopConfetti(); 
+            const data = questions[cur];
+            attempts = 0; time = 45;
+            document.getElementById('feedback').classList.add('hidden');
+            document.getElementById('question-text').innerText = `Q${cur+1}. ${data.q}`;
+            
+            const imgSpace = document.getElementById('image-space');
+            imgSpace.innerHTML = '';
+            if (data.image) {
+                imgSpace.innerHTML = `<img src="${data.image}" class="q-image" alt="Question Image">`;
+            } else if (data.table) {
+                imgSpace.innerHTML = data.table;
+            }
+            
+            const stack = document.getElementById('options-stack');
+            stack.innerHTML = '';
+            data.options.forEach((o, i) => {
+                const b = document.createElement('button');
+                b.className = 'option-btn';
+                b.innerText = o;
+                b.onclick = () => check(i);
+                stack.appendChild(b);
+            });
+            startTimer();
+        }
+
+        function startTimer() {
+            clearInterval(timer);
+            document.getElementById('timer-display').innerText = time + 's';
+            timer = setInterval(() => {
+                time--;
+                document.getElementById('timer-display').innerText = time + 's';
+                if(time <= 0) { clearInterval(timer); check(-1); }
+            }, 1000);
+        }
+
+        function check(idx) {
+            const data = questions[cur];
+            const fb = document.getElementById('feedback');
+            fb.classList.remove('hidden');
+
+            if(idx === data.correct) {
+                clearInterval(timer);
+                score++;
+                if(!muted) document.getElementById('snd-correct').play();
+                fb.className = 'correct-fb';
+                fb.innerText = "Correct! ✨";
+                document.getElementById('score-text').innerText = `Score: ${score}`;
+                startConfetti();
+                setTimeout(next, 2000);
+            } else {
+                attempts++;
+                if(!muted) document.getElementById('snd-wrong').play();
+                if(attempts === 1 && idx !== -1) {
+                    fb.className = 'wrong-fb';
+                    fb.innerText = "Hint: " + data.hint;
+                } else {
+                    clearInterval(timer);
+                    fb.className = 'wrong-fb';
+                    fb.innerText = `Incorrect. Answer: ${data.options[data.correct]}. ${data.expl}`;
+                    setTimeout(next, 4000);
+                }
+            }
+        }
+
+        function next() {
+            cur++;
+            if(cur < questions.length) loadQ();
+            else showFinal();
+        }
+
+        function showFinal() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            const pct = (score/questions.length)*100;
+            document.getElementById('final-score').innerText = `${score}/${questions.length}`;
+            document.getElementById('result-msg').innerText = pct >= 75 ? "Good job!" : (pct >= 40 ? "Review and try again." : "Let’s practise more.");
+        }
+
+        function toggleMute() {
+            muted = !muted;
+            document.getElementById('mute-toggle').innerText = muted ? "🔇" : "🔊";
+        }
+
+        function startConfetti() {
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+            let pieces = [];
+            for(let i=0; i<60; i++) {
+                pieces.push({
+                    x: Math.random()*canvas.width,
+                    y: Math.random()*canvas.height - canvas.height,
+                    r: Math.random()*6 + 4,
+                    d: Math.random()*15,
+                    color: `hsl(${Math.random()*360}, 70%, 50%)`,
+                    v: Math.random()*3 + 2
+                });
+            }
+            function draw() {
+                ctx.clearRect(0,0,canvas.width, canvas.height);
+                pieces.forEach(p => {
+                    ctx.beginPath(); ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+                    ctx.fillStyle = p.color; ctx.fill();
+                    p.y += p.v; p.x += Math.sin(p.d);
+                });
+                confettiID = requestAnimationFrame(draw);
+            }
+            draw();
+        }
+
+        function stopConfetti() {
+            cancelAnimationFrame(confettiID);
+            const canvas = document.getElementById('confetti-canvas');
+            const ctx = canvas.getContext('2d');
+            if(ctx) ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    </script>
+</body>
+</html>
