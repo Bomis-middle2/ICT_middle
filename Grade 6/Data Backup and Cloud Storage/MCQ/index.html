@@ -1,0 +1,815 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 6 ICT - Chapter 1 Interactive Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2b6cb0;
+            --primary-hover: #1a436d;
+            --bg-color: #f7fafc;
+            --card-bg: #ffffff;
+            --text-color: #2d3748;
+            --text-muted: #718096;
+            --success-color: #48bb78;
+            --error-color: #f56565;
+            --border-color: #e2e8f0;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.5;
+            padding: 15px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .quiz-container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05), 0 1px 3px rgba(0, 0, 0, 0.1);
+            padding: 24px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Branding Overlay - Fixed pointer-events to prevent click blocking */
+        #branding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease-out;
+            cursor: pointer;
+        }
+
+        #branding-overlay img {
+            max-width: 250px;
+            height: auto;
+            animation: pulse 1.5s infinite ease-in-out;
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(0.98); opacity: 0.8; }
+            50% { transform: scale(1.02); opacity: 1; }
+            100% { transform: scale(0.98); opacity: 0.8; }
+        }
+
+        /* Utilities */
+        .hidden { display: none !important; }
+
+        /* Audio Controls */
+        .audio-control {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            background: var(--border-color);
+            border: none;
+            padding: 8px 12px;
+            border-radius: 20px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            z-index: 10;
+        }
+
+        /* Header elements */
+        .quiz-header {
+            margin-bottom: 20px;
+            border-bottom: 2px solid var(--border-color);
+            padding-bottom: 12px;
+        }
+
+        .tracker-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            font-weight: bold;
+            color: var(--text-muted);
+            margin-bottom: 10px;
+        }
+
+        .timer-wrapper {
+            width: 100%;
+            background-color: var(--border-color);
+            height: 6px;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 100%;
+            transition: width 1s linear, background-color 0.3s;
+        }
+
+        .timer-warn {
+            background-color: var(--error-color);
+        }
+
+        /* Screen Elements */
+        .screen h1 {
+            font-size: 26px;
+            color: var(--primary-color);
+            margin-bottom: 8px;
+            text-align: center;
+        }
+
+        .screen h2 {
+            font-size: 18px;
+            color: var(--text-muted);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .meta-info {
+            background: var(--bg-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+        }
+
+        .meta-info p {
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+        .meta-info p:last-child { margin-bottom: 0; }
+
+        /* Options layout */
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 20px;
+            color: var(--text-color);
+        }
+
+        .options-list {
+            list-style: none;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            width: 100%;
+            padding: 16px;
+            font-size: 16px;
+            text-align: left;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--bg-color);
+            border-color: var(--text-muted);
+        }
+
+        .option-btn.selected {
+            border-color: var(--primary-color);
+            background-color: #ebf8ff;
+        }
+
+        .option-btn.correct {
+            border-color: var(--success-color);
+            background-color: #f0fff4;
+            color: #22543d;
+            font-weight: bold;
+        }
+
+        .option-btn.incorrect {
+            border-color: var(--error-color);
+            background-color: #fff5f5;
+            color: #742a2a;
+        }
+
+        /* Feedback Area */
+        .feedback-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            font-size: 15px;
+            font-weight: 500;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .feedback-box.hint {
+            background-color: #feebc8;
+            color: #c05621;
+            border-left: 4px solid #dd6b20;
+        }
+
+        .feedback-box.solution {
+            background-color: #e2e8f0;
+            color: #2d3748;
+            border-left: 4px solid #4a5568;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Action Buttons */
+        .action-btn {
+            display: block;
+            width: 100%;
+            padding: 16px;
+            font-size: 18px;
+            font-weight: bold;
+            color: #fff;
+            background-color: var(--primary-color);
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            text-align: center;
+            transition: background 0.2s;
+        }
+
+        .action-btn:hover {
+            background-color: var(--primary-hover);
+        }
+
+        .action-btn:disabled {
+            background-color: var(--border-color);
+            color: var(--text-muted);
+            cursor: not-allowed;
+        }
+
+        /* Result Styles */
+        .result-msg {
+            font-size: 20px;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .score-display {
+            font-size: 48px;
+            font-weight: 800;
+            text-align: center;
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        /* Mobile Adjustments */
+        @media (max-width: 480px) {
+            body { padding: 10px; }
+            .quiz-container { padding: 16px; }
+            .screen h1 { font-size: 22px; }
+            .question-text { font-size: 16px; }
+            .option-btn { padding: 14px; font-size: 15px; }
+            .action-btn { padding: 14px; font-size: 16px; }
+        }
+    </style>
+</head>
+<body>
+
+    <div id="branding-overlay" onclick="dismissBranding()">
+        <img src="assets/innovine-logo.png" alt="Innovine Logo" onerror="this.style.display='none'; document.getElementById('branding-text').style.display='block';">
+        <h1 id="branding-text" style="display:none; color: #2b6cb0;">INNOVINE</h1>
+    </div>
+
+    <audio id="audio-correct" src="assets/correct.mp3" preload="auto"></audio>
+    <audio id="audio-wrong" src="assets/wrong.mp3" preload="auto"></audio>
+
+    <div class="quiz-container">
+        <button class="audio-control" id="audio-toggle" onclick="toggleMute()">
+            <span id="audio-icon">🔊</span> <span id="audio-text">Mute</span>
+        </button>
+
+        <div id="intro-screen" class="screen">
+            <h1>Grade 6 ICT Quiz</h1>
+            <h2>Chapter 1: Storage and Cloud Capabilities</h2>
+            
+            <div class="meta-info">
+                <p><strong>Subject:</strong> ICT</p>
+                <p><strong>Grade:</strong> 6</p>
+                <p><strong>Topic:</strong> Data Storage, Backups & Cloud Storage</p>
+                <p><strong>Number of Questions:</strong> 16</p>
+                <p><strong>Rules:</strong> You have 45 seconds per question and up to 2 attempts per question if you miss!</p>
+            </div>
+
+            <button class="action-btn" onclick="startQuiz()">Start Quiz</button>
+        </div>
+
+        <div id="quiz-screen" class="screen hidden">
+            <div class="quiz-header">
+                <div class="tracker-bar">
+                    <span id="question-number">Question 1/16</span>
+                    <span id="score-tracker">Score: 0</span>
+                </div>
+                <div class="timer-wrapper">
+                    <div id="timer-bar" class="timer-bar"></div>
+                </div>
+            </div>
+
+            <div id="question-container">
+                <p class="question-text" id="question-text">Question content goes here?</p>
+                <div class="options-list" id="options-list">
+                    </div>
+            </div>
+
+            <div id="feedback-box" class="feedback-box hidden"></div>
+
+            <button class="action-btn" id="submit-next-btn" onclick="handleSubmitOrNext()" disabled>Submit Answer</button>
+        </div>
+
+        <div id="result-screen" class="screen hidden">
+            <h1>Quiz Completed!</h1>
+            <div class="score-display" id="final-score">0/16</div>
+            <div id="result-message" class="result-msg"></div>
+            
+            <button class="action-btn" onclick="restartQuiz()">Restart Quiz</button>
+        </div>
+    </div>
+
+    <script>
+        // Master Dataset containing unaltered questions & options from document
+        const quizData = [
+            {
+                q: "Sumitra is working on a school presentation. She saves it on her computer's main drive but nowhere else. Has she created a backup?",
+                options: [
+                    "A) Yes, saving on the main drive is the same as backing up.",
+                    "B) No, keeping work at only one place does not make for a backup.",
+                    "C) Yes, as long as she saves it twice in the same folder.",
+                    "D) No, because she must use a pen drive only."
+                ],
+                answer: 1, 
+                hint: "A backup means having a duplicate copy stored safely somewhere else in case your primary drive crashes.",
+                explanation: "Correct answer is B. Keeping work at only one place does not constitute a backup, as a hardware failure could wipe out the data completely."
+            },
+            {
+                q: "An organization wants to create an exact copy of its entire database to protect against data loss. Which of the following tools is specifically designed for this purpose?",
+                options: [
+                    "A) MS Word",
+                    "B) TotalRecoveryPro",
+                    "C) Google Chrome",
+                    "D) Windows Media Player"
+                ],
+                answer: 1, 
+                hint: "Look for utility software specifically designed for full system recovery and disk imaging rather than web browsing or typing text.",
+                explanation: "Correct answer is B. TotalRecoveryPro is a dedicated backup and recovery utility designed to protect databases and systems from complete losses."
+            },
+            {
+                q: "A teacher wants to copy multiple non-consecutive files from her computer to a pen drive. Which key should she hold down while clicking on the files?",
+                options: [
+                    "A) Shift key",
+                    "B) Alt key",
+                    "C) Ctrl key",
+                    "D) Enter key"
+                ],
+                answer: 2, 
+                hint: "While 'Shift' selects everything between two files sequentially, another key allows selecting isolated items randomly.",
+                explanation: "Correct answer is C. Holding down the Ctrl (Control) key enables selection of multiple individual items that aren't next to each other."
+            },
+            {
+                q: "Rohan is done transferring files to his pen drive. What is the safest way to remove it to prevent his pen drive from malfunctioning?",
+                options: [
+                    "A) Pull it out directly from the USB port quickly.",
+                    "B) Turn off the monitor and then remove it.",
+                    "C) Click on 'Safely Remove Hardware and Eject Media' and then eject.",
+                    "D) Delete the original files on the computer before pulling it out."
+                ],
+                answer: 2, 
+                hint: "The operating system needs an instruction to stop sending background data to the device before physical disconnection.",
+                explanation: "Correct answer is C. Choosing 'Safely Remove Hardware and Eject Media' guarantees all running write activities wrap up safely before extraction."
+            },
+            {
+                q: "Which of the following scenarios best describes 'Cloud Storage'?",
+                options: [
+                    "A) Storing files on a CD-R and keeping it in a physical safe.",
+                    "B) Uploading files to a remote server accessed via the internet.",
+                    "C) Copying files to an external hard drive connected to a laptop.",
+                    "D) Saving files on a local school network without internet access."
+                ],
+                answer: 1, 
+                hint: "Cloud computing inherently relies on servers that exist outside your immediate room, reached globally over the web.",
+                explanation: "Correct answer is B. Cloud storage means transmitting digital assets over the internet to hosting systems deployed remotely."
+            },
+            {
+                q: "A school lab restricts students from connecting secondary storage devices like pen drives to lab computers. How can a student access a presentation created at home in the lab?",
+                options: [
+                    "A) By printing it out on paper.",
+                    "B) By using a DVD instead of a pen drive.",
+                    "C) By uploading it to Google Drive at home and opening it via the internet in the lab.",
+                    "D) It is impossible to access the presentation without a physical device."
+                ],
+                answer: 2, 
+                hint: "If physical hardware ports are blocked, web-based hosting services reachable via any internet browser can save the day.",
+                explanation: "Correct answer is C. Uploading to Google Drive transfers the presentation online, entirely discarding the requirement for physical USB stick connections."
+            },
+            {
+                q: "A company's local hardware crashes, but they do not lose any data because it was stored on the cloud. Which key feature of cloud storage helped them?",
+                options: [
+                    "A) Scalability",
+                    "B) Collaboration",
+                    "C) Security",
+                    "D) Data backup and recovery"
+                ],
+                answer: 3, 
+                hint: "Think about functions dealing specifically with securing safety copies of system records to guard against local physical crashes.",
+                explanation: "Correct answer is D. Cloud infrastructure handles reliable automated off-site copies, satisfying core emergency recovery standards."
+            },
+            {
+                q: "An event management team needs to update a guest list spreadsheet simultaneously from four different cities. Which feature of cloud storage makes this possible?",
+                options: [
+                    "A) Accessibility",
+                    "B) Scalability",
+                    "C) Collaboration",
+                    "D) Private Cloud"
+                ],
+                answer: 2, 
+                hint: "When multiple distributed people work dynamically together in real-time on one mutual record, they are cooperating.",
+                explanation: "Correct answer is C. Collaboration utilities allow real-time multi-user shared viewing and editing operations across different geographical endpoints."
+            },
+            {
+                q: "A website suddenly gets millions of new users and needs to increase its storage space immediately without buying new hardware. Which cloud feature solves this problem?",
+                options: [
+                    "A) Collaboration",
+                    "B) Scalability",
+                    "C) Security",
+                    "D) Data Backup"
+                ],
+                answer: 1, 
+                hint: "This term describes an elastic system's adaptive capacity to instantly expand storage allocations bigger or smaller on demand.",
+                explanation: "Correct answer is B. Scalability refers directly to expanding space parameters fluidly to deal with unexpected load jumps without managing new servers."
+            },
+            {
+                q: "Sarah wants to store her personal photos and videos so she can access them from her mobile phone and tablet anytime. Which type of cloud storage is best suited for her?",
+                options: [
+                    "A) Private Cloud",
+                    "B) Hybrid Cloud",
+                    "C) Personal Cloud",
+                    "D) Physical Cloud"
+                ],
+                answer: 2, 
+                hint: "This option explicitly covers individual private consumers syncing custom multimedia catalogs over independent hand-held tech objects.",
+                explanation: "Correct answer is C. Personal Cloud storage layouts are configured specifically around single consumer environments accessing data anywhere."
+            },
+            {
+                q: "An e-commerce business uses Amazon Web Services (AWS), where their data is stored on shared servers used by multiple users, but with strict privacy measures. This is an example of:",
+                options: [
+                    "A) Public Cloud Storage",
+                    "B) Private Cloud Storage",
+                    "C) Personal Cloud Storage",
+                    "D) Pocket Cloud Storage"
+                ],
+                answer: 0, 
+                hint: "Services like AWS provide broad, multi-tenant digital spaces rented openly by general corporations, governed by individual logical locks.",
+                explanation: "Correct answer is A. Public cloud models operate using external dynamic hardware infrastructure pools shared by various entities simultaneously."
+            },
+            {
+                q: "A highly secure organization needs an exclusive storage infrastructure that only its own personnel can use. Which type of cloud storage should they implement?",
+                options: [
+                    "A) Hybrid Cloud Storage",
+                    "B) Personal Cloud Storage",
+                    "C) Public Cloud Storage",
+                    "D) Private Cloud Storage"
+                ],
+                answer: 3, 
+                hint: "Exclusive access configurations mean the host system properties are fully barricaded from general outside communal tenants.",
+                explanation: "Correct answer is D. Private clouds are designed specifically for proprietary use by one dedicated corporate unit requiring higher walls."
+            },
+            {
+                q: "A bank stores its highly sensitive customer financial records on its private cloud, but uses a public cloud for its general, non-sensitive attendance records. What kind of storage environment is this?",
+                options: [
+                    "A) Personal Cloud",
+                    "B) Hybrid Cloud",
+                    "C) Shared Cloud",
+                    "D) External Cloud"
+                ],
+                answer: 1, 
+                hint: "Think about the composite mixture word used when merging public cloud nodes with internal exclusive proprietary data systems.",
+                explanation: "Correct answer is B. Hybrid Cloud models stitch public environments with separate secured private nodes to let distinct categories of files sit appropriately."
+            },
+            {
+                q: "Where is the data in cloud storage physically located?",
+                options: [
+                    "A) Inside the user's mobile device memory",
+                    "B) In the computer's hard drive",
+                    "C) In remote data centers around the world",
+                    "D) In the local network router"
+                ],
+                answer: 2, 
+                hint: "Cloud structures don't float in thin air; they require mega physical server buildings configured far away from home users.",
+                explanation: "Correct answer is C. Data is safely written inside massive internet-connected commercial data centers spread around the globe."
+            },
+            {
+                q: "According to typical cloud storage services mentioned, which platform provides 15 GB of free cloud storage capacity?",
+                options: [
+                    "A) Amazon Web Services",
+                    "B) IBM Cloud",
+                    "C) Google Drive",
+                    "D) Dropbox"
+                ],
+                answer: 2, 
+                hint: "Think of the popular tool tied directly to standard consumer Google accounts that houses your Slides, Docs, and Sheets.",
+                explanation: "Correct answer is C. Google Drive famously sets up default registrations with an inclusive free base block of 15 GB storage space."
+            },
+            {
+                q: "Mr. Sharma wants to control exactly who can view and edit the files he uploaded to the cloud. Which feature of cloud storage is he utilizing?",
+                options: [
+                    "A) Scalability",
+                    "B) Security",
+                    "C) Disaster Recovery",
+                    "D) Hybrid Storage"
+                ],
+                answer: 1, 
+                hint: "Managing selective read-write privileges protects user documents against unwanted modifications and snooping.",
+                explanation: "Correct answer is B. Setting strict folder permissions controls visibility and modifications, which directly leverages cloud security protocols."
+            }
+        ];
+
+        // Application State tracking vars
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let attemptCount = 0;
+        let selectedOptionIndex = null;
+        let timerInterval = null;
+        let timeLeft = 45; 
+        let isMuted = false;
+
+        // Branding Overlay Auto-Dismiss setup
+        let brandingTimer = setTimeout(dismissBranding, 5000);
+
+        function dismissBranding() {
+            if (brandingTimer) clearTimeout(brandingTimer);
+            const overlay = document.getElementById('branding-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                // Complete removal from layout structure to avoid blocking interactions
+                setTimeout(() => overlay.style.display = 'none', 500);
+            }
+        }
+
+        // Sound System
+        function playSound(type) {
+            if (isMuted) return;
+            const sound = document.getElementById(type === 'correct' ? 'audio-correct' : 'audio-wrong');
+            if (sound) {
+                sound.currentTime = 0;
+                sound.play().catch(e => console.log("Audio play blocked until user interaction."));
+            }
+        }
+
+        function toggleMute() {
+            isMuted = !isMuted;
+            document.getElementById('audio-icon').innerText = isMuted ? "🔇" : "🔊";
+            document.getElementById('audio-text').innerText = isMuted ? "Unmute" : "Mute";
+        }
+
+        // Quiz State Control
+        function startQuiz() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            currentQuestionIndex = 0;
+            score = 0;
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            resetTimer();
+            attemptCount = 0;
+            selectedOptionIndex = null;
+            
+            const currentQ = quizData[currentQuestionIndex];
+            
+            // UI elements population
+            document.getElementById('question-number').innerText = `Question ${currentQuestionIndex + 1}/${quizData.length}`;
+            document.getElementById('score-tracker').innerText = `Score: ${score}`;
+            document.getElementById('question-text').innerText = currentQ.q;
+            
+            const optionsContainer = document.getElementById('options-list');
+            optionsContainer.innerHTML = '';
+            
+            currentQ.options.forEach((optionText, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.innerText = optionText;
+                btn.onclick = () => selectOption(index);
+                optionsContainer.appendChild(btn);
+            });
+
+            // Clean and completely hide the feedback field from last card iteration
+            const feedbackBox = document.getElementById('feedback-box');
+            feedbackBox.innerText = '';
+            feedbackBox.className = 'feedback-box';
+            feedbackBox.classList.add('hidden');
+            
+            const submitBtn = document.getElementById('submit-next-btn');
+            submitBtn.innerText = "Submit Answer";
+            submitBtn.disabled = true;
+
+            startTimer();
+        }
+
+        // Action routing helper for unified action button
+        function handleSubmitOrNext() {
+            const submitBtn = document.getElementById('submit-next-btn');
+            if (submitBtn.innerText === "Submit Answer") {
+                submitAnswer();
+            } else if (submitBtn.innerText === "Next Question") {
+                loadNextQuestion();
+            } else if (submitBtn.innerText === "View Results") {
+                showResults();
+            }
+        }
+
+        // Timer Logic
+        function startTimer() {
+            timeLeft = 45;
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.classList.remove('timer-warn');
+            timerBar.style.width = '100%';
+
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const percent = (timeLeft / 45) * 100;
+                timerBar.style.width = `${percent}%`;
+
+                if (timeLeft <= 10) {
+                    timerBar.classList.add('timer-warn');
+                }
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeOut();
+                }
+            }, 1000);
+        }
+
+        function resetTimer() {
+            if (timerInterval) clearInterval(timerInterval);
+        }
+
+        // Choice Processing
+        function selectOption(index) {
+            const submitBtn = document.getElementById('submit-next-btn');
+            if (submitBtn.innerText === "Next Question" || submitBtn.innerText === "View Results") return; 
+            
+            selectedOptionIndex = index;
+            const buttons = document.querySelectorAll('.options-list .option-btn');
+            buttons.forEach((btn, i) => {
+                if (i === index) {
+                    btn.classList.add('selected');
+                } else {
+                    btn.classList.remove('selected');
+                }
+            });
+            submitBtn.disabled = false;
+        }
+
+        // Action Evaluators
+        function submitAnswer() {
+            resetTimer();
+            const currentQ = quizData[currentQuestionIndex];
+            const buttons = document.querySelectorAll('.options-list .option-btn');
+            const feedbackBox = document.getElementById('feedback-box');
+            
+            attemptCount++;
+
+            if (selectedOptionIndex === currentQ.answer) {
+                // Correct Pathway
+                playSound('correct');
+                confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
+                
+                buttons[selectedOptionIndex].classList.remove('selected');
+                buttons[selectedOptionIndex].classList.add('correct');
+                
+                score++;
+                document.getElementById('score-tracker').innerText = `Score: ${score}`;
+                
+                feedbackBox.innerText = "Excellent! You got it right.";
+                feedbackBox.className = "feedback-box solution";
+                feedbackBox.classList.remove('hidden');
+                
+                lockOptions();
+                prepareNextStep();
+            } else {
+                // Incorrect Pathway
+                playSound('wrong');
+                buttons[selectedOptionIndex].classList.remove('selected');
+                buttons[selectedOptionIndex].classList.add('incorrect');
+
+                if (attemptCount === 1) {
+                    // Retry Allocation logic
+                    feedbackBox.innerText = `💡 Hint: ${currentQ.hint}`;
+                    feedbackBox.className = "feedback-box hint";
+                    feedbackBox.classList.remove('hidden');
+                    document.getElementById('submit-next-btn').disabled = true;
+                } else {
+                    // Final Attempt depleted
+                    buttons[currentQ.answer].classList.add('correct');
+                    feedbackBox.innerText = currentQ.explanation;
+                    feedbackBox.className = "feedback-box solution";
+                    feedbackBox.classList.remove('hidden');
+                    
+                    lockOptions();
+                    prepareNextStep();
+                }
+            }
+        }
+
+        function handleTimeOut() {
+            attemptCount = 2;
+            const currentQ = quizData[currentQuestionIndex];
+            const buttons = document.querySelectorAll('.options-list .option-btn');
+            const feedbackBox = document.getElementById('feedback-box');
+            
+            playSound('wrong');
+            buttons[currentQ.answer].classList.add('correct');
+            
+            feedbackBox.innerText = "⏰ Time's up! " + currentQ.explanation;
+            feedbackBox.className = "feedback-box solution";
+            feedbackBox.classList.remove('hidden');
+            
+            lockOptions();
+            prepareNextStep();
+        }
+
+        function lockOptions() {
+            const buttons = document.querySelectorAll('.options-list .option-btn');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        function prepareNextStep() {
+            const submitBtn = document.getElementById('submit-next-btn');
+            submitBtn.disabled = false;
+            if (currentQuestionIndex < quizData.length - 1) {
+                submitBtn.innerText = "Next Question";
+            } else {
+                submitBtn.innerText = "View Results";
+            }
+        }
+
+        function loadNextQuestion() {
+            currentQuestionIndex++;
+            loadQuestion();
+        }
+
+        function showResults() {
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.remove('hidden');
+            
+            const finalScoreElement = document.getElementById('final-score');
+            finalScoreElement.innerText = `${score}/${quizData.length}`;
+            
+            const percentage = (score / quizData.length) * 100;
+            const msgBox = document.getElementById('result-message');
+            
+            if (percentage >= 75) {
+                msgBox.innerText = "Good job 🎉";
+                msgBox.style.backgroundColor = "#f0fff4";
+                msgBox.style.color = "#22543d";
+                confetti({ particleCount: 150, spread: 80 });
+            } else if (percentage >= 40) {
+                msgBox.innerText = "Review this chapter and try again 📚";
+                msgBox.style.backgroundColor = "#feebc8";
+                msgBox.style.color = "#c05621";
+            } else {
+                msgBox.innerText = "Let’s practise more 💪";
+                msgBox.style.backgroundColor = "#fff5f5";
+                msgBox.style.color = "#742a2a";
+            }
+        }
+
+        function restartQuiz() {
+            document.getElementById('result-screen').classList.add('hidden');
+            startQuiz();
+        }
+    </script>
+</body>
+</html>
