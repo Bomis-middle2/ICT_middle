@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 6 ICT - Chapter 3 Interactive Quiz</title>
+    <style>
+        :root {
+            --primary-color: #2b579a;
+            --secondary-color: #e2e9f3;
+            --success-color: #2bc474;
+            --error-color: #e74c3c;
+            --text-dark: #2c3e50;
+            --text-light: #ffffff;
+            --background: #f8f9fa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .quiz-container {
+            background: white;
+            width: 100%;
+            max-width: 650px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Splash Screen (Fixed Fail-Safe Display) */
+        #splash-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 1;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        #splash-screen img {
+            max-width: 220px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--secondary-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Views Layout */
+        .view {
+            display: none;
+            padding: 30px;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* Header / Controls */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--secondary-color);
+            padding: 15px 30px 15px 30px;
+            background: #ffffff;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-audio {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Intro Screen */
+        .intro-title {
+            color: var(--primary-color);
+            font-size: 26px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .meta-info {
+            background: var(--secondary-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Interactive Buttons */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .btn-primary:hover {
+            background-color: #1e3d6b;
+        }
+
+        /* Question Layout */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .timer-text {
+            color: var(--error-color);
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        /* Options layout */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background-color: white;
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+            padding: 14px 18px;
+            text-align: left;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: block;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--secondary-color);
+            border-color: #b0c4de;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda !important;
+            border-color: var(--success-color) !important;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .option-btn.wrong {
+            background-color: #f8d7da !important;
+            border-color: var(--error-color) !important;
+            color: #721c24;
+        }
+
+        /* Feedback Boxes */
+        .feedback-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-size: 15px;
+            line-height: 1.5;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+            white-space: pre-line;
+        }
+
+        .feedback-box.hint {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            color: #856404;
+        }
+
+        .feedback-box.explanation {
+            background-color: #e2f0d9;
+            border-left: 5px solid var(--success-color);
+            color: #385723;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5deg); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Results Display */
+        .result-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .result-msg {
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #confetti-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <!-- Splash Screen (Failsafe Branding) -->
+        <div id="splash-screen">
+            <img src="assets/innovine-logo.png" alt="Innovine Logo" id="logo-img">
+            <h2 id="logo-placeholder" style="color: var(--primary-color); margin-bottom: 20px; font-weight: bold; tracking-letter: 2px;">INNOVINE</h2>
+            <div class="loader"></div>
+        </div>
+
+        <!-- Animation Canvas -->
+        <canvas id="confetti-canvas"></canvas>
+
+        <!-- Dynamic Header Bar -->
+        <div class="quiz-header">
+            <div class="score-tracker" id="score-display">Score: 0</div>
+            <div class="controls">
+                <button class="btn-audio" id="audio-toggle" title="Toggle Sound">🔊</button>
+            </div>
+        </div>
+
+        <!-- VIEW 1: Intro Screen -->
+        <div id="intro-view" class="view active">
+            <h1 class="intro-title">Grade 6 ICT — Interactive Practice</h1>
+            <div class="meta-info">
+                <p><strong>Grade:</strong> 6</p>
+                <p><strong>Subject:</strong> ICT</p>
+                <p><strong>Topic:</strong> Chapter 3: OpenOffice 4 Calc - I</p>
+                <p><strong>Total Questions:</strong> <span id="total-q-count">14</span></p>
+            </div>
+            <button class="btn-primary" onclick="startQuiz()">Start Practice</button>
+        </div>
+
+        <!-- VIEW 2: Question View -->
+        <div id="question-view" class="view">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress"></div>
+            </div>
+            <div class="question-meta">
+                <span id="question-number">Question 1 of 14</span>
+                <span class="timer-text">⏱️ <span id="timer-count">45</span>s</span>
+            </div>
+            <div class="question-text" id="question-text">
+                Question content
+            </div>
+            <div class="options-container" id="options-block">
+                <!-- Dynamically populated options -->
+            </div>
+            <div class="feedback-box" id="feedback-block"></div>
+            <button class="btn-primary" id="action-btn" style="display:none;" onclick="handleActionClick()">Next</button>
+        </div>
+
+        <!-- VIEW 3: Results View -->
+        <div id="result-view" class="view">
+            <h2 class="intro-title">Practice Completed!</h2>
+            <div class="result-score" id="final-score-text">0%</div>
+            <div class="result-msg" id="final-message">Feedback placeholder</div>
+            <button class="btn-primary" onclick="restartQuiz()">Restart</button>
+        </div>
+    </div>
+
+    <script>
+        // Standard structural source mapping
+        const quizData = [
+            {
+                q: "Rahul wants to record his daily cycle riding times for a week and find out the total time spent. Which application layout is best suited for him to organize this numerical data and compute the total?",
+                options: [
+                    "A presentation canvas with slide layouts",
+                    "A text processor with linear paragraphs",
+                    "A grid system organized into rows and columns",
+                    "A database system consisting of relational trees"
+                ],
+                correct: 2,
+                hint: "Think about which view uses rows and columns to help calculate numerical values easily.",
+                explanation: "A spreadsheet application (like OpenOffice Calc) is in the form of a grid or table that organizes data into rows and columns to perform calculations and analyze numerical data."
+            },
+            {
+                q: "Anya opened OpenOffice Calc to start her school assignment. What default workbook name and default number of worksheets will she see on her screen?",
+                options: [
+                    "Document1; 1 worksheet (Sheet1)",
+                    "Untitled1; 3 worksheets (Sheet1, Sheet2, Sheet3)",
+                    "Spreadsheet1; 2 worksheets (Sheet1, Sheet2)",
+                    "Book1; 4 worksheets (Sheet1 to Sheet4)"
+                ],
+                correct: 1,
+                hint: "New files are unsaved/untitled initially and give you three default starter sheets.",
+                explanation: "By default, the first workbook is named 'Untitled1' and it contains three worksheets namely: Sheet1, Sheet2, and Sheet3."
+            },
+            {
+                q: "Kabir clicked on the very first block in the top-left corner of his worksheet to type his name. Which cell address is displayed in the Name Box?",
+                options: ["1A", "A0", "A1", "1"],
+                correct: 2,
+                hint: "A cell address always starts with its Column Letter followed immediately by its Row Number.",
+                explanation: "The first cell in the upper left corner of a worksheet is the intersection of column A and row 1, which gives it the cell address A1."
+            },
+            {
+                q: "Sana is filling columns with labels. She notices that column headings progress from A through Z. What is the label of the 27th column heading immediately after Z?",
+                options: ["ZA", "Z1", "AA", "AB"],
+                correct: 2,
+                hint: "After completing the alphabet Z, the grid cycle restarts using dual letter pairings starting with the first letter.",
+                explanation: "The first 26 column headings are A through Z. The next 26 column headings are labelled AA through AZ."
+            },
+            {
+                q: "While documenting his pocket money expenses, Aarav typed 'Ice cream' in cell B2 and '50' in cell B3. How does Calc align these two data types inside the cells by default?",
+                options: [
+                    "'Ice cream' is left-aligned; '50' is right-aligned",
+                    "'Ice cream' is right-aligned; '50' is left-aligned",
+                    "Both data types are perfectly centered",
+                    "Both data types are aligned to the left edge"
+                ],
+                correct: 0,
+                hint: "Words/text lean left so you can read them naturally, while numbers line up on the right side for easy math columns.",
+                explanation: "By default, text data (like 'Ice cream') is left-aligned, and numbers (like '50') are right-aligned."
+            },
+            {
+                q: "Meera wants to perform a calculation. She types four different formats in separate cells. Which of these formulas will Calc actually calculate?",
+                options: ["SUM(A1:A5)", "calc: A1+A2", "=A1+A2", "A1+A2="],
+                correct: 2,
+                hint: "Every functional formula must always signal the spreadsheet to work by starting with a specific math sign.",
+                explanation: "A formula in OpenOffice Calc must always start with an equal to (=) sign to evaluate an equation."
+            },
+            {
+                q: "Rohan finished creating his science project table and wants to save his workbook using the 'Save As' menu. What file extension will Calc append to his filename?",
+                options: [".doc", ".ods", ".txt", ".xls"],
+                correct: 1,
+                hint: "Calc uses the standard OpenDocument Spreadsheet extension framework.",
+                explanation: "OpenOffice Calc files are natively saved with the file extension .ods (OpenDocument Spreadsheet)."
+            },
+            {
+                q: "Preeti wants to edit a typo in cell C4 without erasing the whole sentence. She clicks the cell once. Which key on her keyboard should she press to enter cell editing mode directly?",
+                options: ["F2 key", "F5 key", "Spacebar", "Alt key"],
+                correct: 0,
+                hint: "Look toward your top row function keys; the second function key activates directly inside any selected block.",
+                explanation: "The cell contents can be modified directly by pressing the F2 key or by double-clicking on the cell."
+            },
+            {
+                q: "Dev has data in cell D1 and wants to duplicate it down to cell G1 using keyboard shortcuts. Which sequential pairs of shortcut keys should he press?",
+                options: ["Ctrl+X then Ctrl+V", "Ctrl+C then Ctrl+P", "Ctrl+C then Ctrl+V", "Ctrl+Z then Ctrl+Y"],
+                correct: 2,
+                hint: "First command triggers 'Copy' and the next executes 'Paste'.",
+                explanation: "To duplicate or copy data, use Ctrl+C for Copy and Ctrl+V for Paste."
+            },
+            {
+                q: "Ananya typed a very long sentence 'Science Experiment Observations' in cell E1. It is spilling over horizontally into cell F1. She wants it to wrap automatically down to multiple lines within E1 without widening the column. Which option should she select?",
+                options: ["Merge Cells", "Justified Alignment", "Wrap Text", "Rotate Text"],
+                correct: 2,
+                hint: "You want the text lines to 'fold' down vertically into multiple rows within that single box boundary.",
+                explanation: "Wrap Text formatting allows the user to display cell content exceeding cell width in multiple lines within the same cell."
+            },
+            {
+                q: "Statement: In OpenOffice Calc, you can join three adjacent horizontal cells into a single larger combined block.\nReason: The 'Merge Cells' tool combines selected cell ranges and allows headings to look clean and unified.\n\nWhich option accurately evaluates this statement and reason?",
+                options: [
+                    "The statement is true, and the reason is a correct explanation.",
+                    "The statement is true, but the reason is completely false.",
+                    "The statement is false, but the reason is a true concept.",
+                    "Both the statement and the reason are completely false."
+                ],
+                correct: 0,
+                hint: "Can you unite boxes? And is making headers look nicely organized the true goal of doing that?",
+                explanation: "Calc provides a way to join multiple cells into one larger cell using the Merge Cells tool, which helps format unified structural blocks like table headers."
+            },
+            {
+                q: "Tanya is learning about structural layout changes in Calc. She wants to use options that alter rows and columns from the right-click pop-up menu. Which of the following options does NOT belong with row/column modifications?",
+                options: ["Insert Columns", "Delete Rows", "Insert Rows", "Scientific Notation"],
+                correct: 3,
+                hint: "Three options change the physical shapes/counts of grid cells; one option alters how numbers look.",
+                explanation: "Insert Columns, Delete Rows, and Insert Rows are structural row/column modification tools, whereas 'Scientific Notation' is a cell numeric format found under the Numbers tab."
+            },
+            {
+                q: "Karan is examining the following horizontal row of test marks across columns on his sheet:\nCell B4: 15 | Cell C4: 20 | Cell D4: 10\nHe selects cell E4, clicks the SUM function tool (Sigma symbol) from his Formula toolbar, and confirms the range. What will be displayed in cell E4 and its formula bar?",
+                options: [
+                    "E4 displays 45; Formula bar displays =SUM(B4:D4)",
+                    "E4 displays =SUM(B4:D4); Formula bar displays 45",
+                    "E4 displays 45; Formula bar displays B4+C4+D4",
+                    "E4 displays 15; Formula bar displays empty"
+                ],
+                correct: 0,
+                hint: "The direct output answer sits within the sheet layout grid box, while the behind-the-scenes formula sits up top in the bar system.",
+                explanation: "The calculated total value (45) is displayed in the active cell, and the actual formula used (=SUM(B4:D4)) is displayed up in the Formula bar/Input line."
+            },
+            {
+                q: "Ritika is an HR professional managing an employee attendance spreadsheet. She accidentally left an old employee's record from 2 years ago in row 7. She needs to remove this specific row entirely without leaving an empty blank gap in between her data. What action should she perform?",
+                options: [
+                    "Select row header 7, right-click, and select 'Delete Rows'",
+                    "Click cell A7 and press the Backspace key on her keyboard",
+                    "Select row header 7, right-click, and select 'Rename Sheet'",
+                    "Double-click row header 7 and type a zero '0'"
+                ],
+                correct: 0,
+                hint: "Pressing clear keys leaves behind a structural empty row slot. You want to execute a command that removes the structural row frame completely.",
+                explanation: "Right-clicking a row header and selecting 'Delete Rows' completely removes the row from the structure and shifts subsequent rows up, leaving no empty structural gap."
+            }
+        ];
+
+        // State Machine Core Variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let attemptsLeft = 2;
+        let timerInterval = null;
+        let timeRemaining = 45;
+        let audioMuted = false;
+
+        // Auditory Infrastructure Instantiation
+        const audioCorrect = new Audio('assets/correct.mp3');
+        const audioWrong = new Audio('assets/wrong.mp3');
+
+        // Document Cache Pointers
+        const splashScreen = document.getElementById('splash-screen');
+        const logoImage = document.getElementById('logo-img');
+        const logoPlaceholder = document.getElementById('logo-placeholder');
+        const introView = document.getElementById('intro-view');
+        const questionView = document.getElementById('question-view');
+        const resultView = document.getElementById('result-view');
+        const scoreDisplay = document.getElementById('score-display');
+        const audioToggle = document.getElementById('audio-toggle');
+        const totalQCountSpan = document.getElementById('total-q-count');
+
+        // Handle structural missing assets cleanly
+        logoImage.onerror = function() {
+            this.style.display = 'none';
+            logoPlaceholder.style.display = 'block';
+        };
+
+        // Execution Controller (GUARANTEED DISMISSAL TIMEOUT)
+        window.addEventListener('load', () => {
+            totalQCountSpan.textContent = quizData.length;
+            
+            // Unconditional splash screen removal loop after exactly 5000 milliseconds
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 500);
+            }, 5000);
+        });
+
+        // Audio controls
+        audioToggle.addEventListener('click', () => {
+            audioMuted = !audioMuted;
+            audioToggle.textContent = audioMuted ? "❌" : "🔊";
+        });
+
+        function playSound(audioObject) {
+            if (!audioMuted) {
+                audioObject.currentTime = 0;
+                audioObject.play().catch(e => console.log("Audio waiting for interaction context channel."));
+            }
+        }
+
+        // Functional Quiz Engine Components
+        function startQuiz() {
+            introView.classList.remove('active');
+            questionView.classList.add('active');
+            currentQuestionIndex = 0;
+            score = 0;
+            updateScoreDisplay();
+            loadQuestion();
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        function loadQuestion() {
+            clearInterval(timerInterval);
+            attemptsLeft = 2;
+            timeRemaining = 45;
+            
+            const qData = quizData[currentQuestionIndex];
+            
+            document.getElementById('question-number').textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+            document.getElementById('progress').style.width = `${((currentQuestionIndex) / quizData.length) * 100}%`;
+            document.getElementById('question-text').textContent = qData.q;
+            document.getElementById('timer-count').textContent = timeRemaining;
+            
+            const feedbackBlock = document.getElementById('feedback-block');
+            feedbackBlock.style.display = 'none';
+            feedbackBlock.className = 'feedback-box';
+            
+            document.getElementById('action-btn').style.display = 'none';
+
+            const optionsBlock = document.getElementById('options-block');
+            optionsBlock.innerHTML = '';
+            
+            qData.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.onclick = () => submitAnswer(index, btn);
+                optionsBlock.appendChild(btn);
+            });
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('timer-count').textContent = timeRemaining;
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    forceTimeoutReveal();
+                }
+            }, 1000);
+        }
+
+        function submitAnswer(selectedIndex, clickedBtn) {
+            const qData = quizData[currentQuestionIndex];
+            const optionsBlock = document.getElementById('options-block');
+            const feedbackBlock = document.getElementById('feedback-block');
+
+            if (selectedIndex === qData.correct) {
+                clearInterval(timerInterval);
+                playSound(audioCorrect);
+                triggerSparklers();
+                clickedBtn.classList.add('correct');
+                
+                if (attemptsLeft === 2) {
+                    score += 10;
+                } else {
+                    score += 5;
+                }
+                updateScoreDisplay();
+
+                Array.from(optionsBlock.children).forEach(btn => btn.disabled = true);
+                
+                feedbackBlock.innerText = `✨ Correct!\n\n${qData.explanation}`;
+                feedbackBlock.className = 'feedback-box explanation';
+                feedbackBlock.style.display = 'block';
+                
+                showNextActionControl();
+            } else {
+                attemptsLeft--;
+                clickedBtn.classList.add('wrong');
+                clickedBtn.disabled = true;
+                playSound(audioWrong);
+
+                if (attemptsLeft === 1) {
+                    feedbackBlock.innerText = `💡 Try Again!\nHint: ${qData.hint}`;
+                    feedbackBlock.className = 'feedback-box hint';
+                    feedbackBlock.style.display = 'block';
+                } else {
+                    clearInterval(timerInterval);
+                    Array.from(optionsBlock.children).forEach(btn => btn.disabled = true);
+                    optionsBlock.children[qData.correct].classList.add('correct');
+                    
+                    feedbackBlock.innerText = `Learning Review:\n\n${qData.explanation}`;
+                    feedbackBlock.className = 'feedback-box explanation';
+                    feedbackBlock.style.display = 'block';
+                    
+                    showNextActionControl();
+                }
+            }
+        }
+
+        function forceTimeoutReveal() {
+            const qData = quizData[currentQuestionIndex];
+            const optionsBlock = document.getElementById('options-block');
+            const feedbackBlock = document.getElementById('feedback-block');
+            
+            Array.from(optionsBlock.children).forEach(btn => btn.disabled = true);
+            optionsBlock.children[qData.correct].classList.add('correct');
+            
+            feedbackBlock.innerText = `⏳ Time's Up!\nLet's review the solution:\n\n${qData.explanation}`;
+            feedbackBlock.className = 'feedback-box explanation';
+            feedbackBlock.style.display = 'block';
+            
+            playSound(audioWrong);
+            showNextActionControl();
+        }
+
+        function showNextActionControl() {
+            const actionBtn = document.getElementById('action-btn');
+            actionBtn.style.display = 'block';
+            if (currentQuestionIndex === quizData.length - 1) {
+                actionBtn.textContent = "View Results";
+            } else {
+                actionBtn.textContent = "Next Question";
+            }
+        }
+
+        function handleActionClick() {
+            if (currentQuestionIndex < quizData.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                displayFinalScoreCard();
+            }
+        }
+
+        function displayFinalScoreCard() {
+            questionView.classList.remove('active');
+            resultView.classList.add('active');
+            document.getElementById('progress').style.width = '100%';
+            
+            const maximumPossiblePoints = quizData.length * 10;
+            const percentageScored = Math.round((score / maximumPossiblePoints) * 100);
+            
+            document.getElementById('final-score-text').textContent = `${percentageScored}%`;
+            
+            const msgBlock = document.getElementById('final-message');
+            
+            if (percentageScored >= 75) {
+                msgBlock.textContent = "Good job! You have mastered this chapter.";
+                msgBlock.style.backgroundColor = "#d4edda";
+                msgBlock.style.color = "#155724";
+                triggerSparklers();
+            } else if (percentageScored >= 40) {
+                msgBlock.textContent = "Review this chapter and try again.";
+                msgBlock.style.backgroundColor = "#fff3cd";
+                msgBlock.style.color = "#856404";
+            } else {
+                msgBlock.textContent = "Let's practise more. Go through the core concepts again.";
+                msgBlock.style.backgroundColor = "#f8d7da";
+                msgBlock.style.color = "#721c24";
+            }
+        }
+
+        function restartQuiz() {
+            resultView.classList.remove('active');
+            startQuiz();
+        }
+
+        // Particle System Infrastructure (Sparklers)
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function triggerSparklers() {
+            resizeCanvas();
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 - 50,
+                    radius: Math.random() * 4 + 2,
+                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 3,
+                    alpha: 1,
+                    decay: Math.random() * 0.015 + 0.015
+                });
+            }
+            if(particles.length <= 60) {
+                requestAnimationFrame(renderParticles);
+            }
+        }
+
+        function renderParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.alpha -= p.decay;
+                
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.restore();
+                
+                if (p.alpha <= 0) {
+                    particles.splice(idx, 1);
+                }
+            });
+            
+            if (particles.length > 0) {
+                requestAnimationFrame(renderParticles);
+            }
+        }
+    </script>
+</body>
+</html>
