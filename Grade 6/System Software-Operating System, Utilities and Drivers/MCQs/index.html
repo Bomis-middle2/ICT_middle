@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 6 ICT - Chapter 2 Quiz</title>
+    <style>
+        :root {
+            --bg-color: #f4f6f9;
+            --card-bg: #ffffff;
+            --text-color: #2c3e50;
+            --primary-color: #3498db;
+            --primary-hover: #2980b9;
+            --success-color: #2ecc71;
+            --error-color: #e74c3c;
+            --border-color: #dcdde1;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 650px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            padding: 30px;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Branding Overlay */
+        #branding-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #ffffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease;
+        }
+
+        #branding-overlay img {
+            max-width: 250px;
+            height: auto;
+        }
+
+        /* Utilities & Layout */
+        .hidden { display: none !important; }
+        
+        h1 { font-size: 1.8rem; margin-bottom: 10px; color: #1a252f; text-align: center;}
+        h2 { font-size: 1.2rem; margin-bottom: 20px; text-align: center; color: #7f8c8d;}
+        
+        .meta-info {
+            background: #edf2f7;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 1rem;
+        }
+
+        .meta-info p { margin-bottom: 8px; }
+        .meta-info p:last-child { margin-bottom: 0; }
+
+        /* Controls Row */
+        .controls-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            font-weight: bold;
+            font-size: 0.95rem;
+        }
+
+        .audio-btn {
+            background: #7f8c8d;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 0.85rem;
+        }
+
+        /* Timer and Progress */
+        .timer-bar-container {
+            width: 100%;
+            height: 6px;
+            background: #e0e0e0;
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background: var(--primary-color);
+            transition: width 1s linear;
+        }
+
+        /* Question Styles */
+        .question-text {
+            font-size: 1.15rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+        }
+
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            border-radius: 8px;
+            padding: 16px;
+            font-size: 1.05rem;
+            text-align: left;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            min-height: 54px; /* Mobile tap target compliance */
+        }
+
+        .option-btn:hover:not(:disabled) {
+            border-color: var(--primary-color);
+            background: #f7f9fa;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda !important;
+            border-color: var(--success-color) !important;
+            color: #155724;
+        }
+
+        .option-btn.wrong {
+            background-color: #f8d7da !important;
+            border-color: var(--error-color) !important;
+            color: #721c24;
+        }
+
+        /* Feedback Area */
+        .feedback-box {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 8px;
+            font-size: 1rem;
+            animation: fadeIn 0.3s ease;
+        }
+        .feedback-box.hint { background: #fff3cd; border-left: 4px solid #ffc107; color: #856404; }
+        .feedback-box.explanation { background: #d1ecf1; border-left: 4px solid #17a2b8; color: #0c5460; }
+
+        /* Action Buttons */
+        .action-btn {
+            display: block;
+            width: 100%;
+            background: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px;
+            font-size: 1.1rem;
+            border-radius: 8px;
+            cursor: pointer;
+            margin-top: 20px;
+            font-weight: bold;
+        }
+
+        .action-btn:hover { background: var(--primary-hover); }
+
+        /* Confetti effect placeholder container */
+        #confetti-container {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 10;
+        }
+        .confetti-piece {
+            position: absolute;
+            width: 8px; height: 8px;
+            background: #ffc107;
+            opacity: 0.8;
+            animation: fall 1s ease-out forwards;
+        }
+
+        @keyframes fall {
+            0% { transform: translateY(0) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(200px) rotate(360deg); opacity: 0; }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(5px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Results Screen */
+        .result-score {
+            font-size: 3rem;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            color: var(--primary-color);
+        }
+        .result-msg {
+            font-size: 1.25rem;
+            text-align: center;
+            font-weight: 600;
+            margin-bottom: 25px;
+        }
+    </style>
+</head>
+<body>
+
+    <div id="branding-overlay">
+        <img src="assets/innovine-logo.png" alt="Innovine Logo" onerror="this.style.display='none'; document.getElementById('branding-fallback').innerText='Innovine'">
+        <h1 id="branding-fallback" style="font-size:2.5rem; color:#2c3e50;"></h1>
+    </div>
+
+    <div class="container">
+        <div id="confetti-container"></div>
+
+        <div id="intro-screen">
+            <h1>Grade 6 ICT Quiz</h1>
+            <h2>Chapter 2 Assessment</h2>
+            <div class="meta-info">
+                <p><strong>Grade:</strong> Grade 6</p>
+                <p><strong>Subject:</strong> Information and Communication Technology (ICT)</p>
+                <p><strong>Topic:</strong> Chapter 2 (System Software-Operating System,Utilities and Drivers)</p>
+                <p><strong>Number of Questions:</strong> 17</p>
+                <p><strong>Rules:</strong> You have 45 seconds per question with up to 2 attempts per question.</p>
+            </div>
+            <button class="action-btn" onclick="startQuiz()">Start Quiz</button>
+        </div>
+
+        <div id="quiz-screen" class="hidden">
+            <div class="controls-row">
+                <div>Question <span id="current-q-num">1</span>/17</div>
+                <div>Score: <span id="live-score">0</span></div>
+                <button class="audio-btn" id="mute-btn" onclick="toggleMute()">🔊 Mute Audio</button>
+            </div>
+
+            <div class="timer-bar-container">
+                <div class="timer-bar" id="timer-bar"></div>
+            </div>
+
+            <div class="question-text" id="question-text">Loading question text...</div>
+            
+            <div class="options-container" id="options-container">
+                </div>
+
+            <div class="feedback-box hidden" id="feedback-box"></div>
+
+            <button class="action-btn hidden" id="next-btn" onclick="nextQuestion()">Next Question</button>
+        </div>
+
+        <div id="results-screen" class="hidden">
+            <h1>Quiz Completed!</h1>
+            <div class="result-score" id="final-score">0 / 17</div>
+            <div class="result-msg" id="result-message">Processing your score...</div>
+            <button class="action-btn" onclick="restartQuiz()">Try Again</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz Data Base mapping back to the extracted document structures
+        const quizData = [
+            {
+                q: "Meera wants to type an essay for her school assignment and then create a presentation. What kind of software will she primarily use for these tasks?",
+                options: ["System Software", "Application Software", "Utility Software", "Device Drivers"],
+                correct: 1, // B
+                hint: "Think about programs designed directly for user tasks like writing documents or creating slide shows.",
+                exp: "Application Software helps users perform specific tasks like typing documents (word processors) or making presentations."
+            },
+            {
+                q: "Rahul buys a brand-new computer but finds that it cannot even start properly or let him install games. What crucial system software is likely missing?",
+                options: ["Microsoft Word", "A Web Browser", "Operating System", "WinZip"],
+                correct: 2, // C
+                hint: "This software is the foundational layer that manages the computer hardware and boots up the machine.",
+                exp: "An Operating System (OS) is essential system software required to start the computer and manage running other software applications."
+            },
+            {
+                q: "Priya likes using Windows 11 because she can simply click on small pictures (icons) and menus with her mouse pointer to open files. Which type of interface is she using?",
+                options: ["Command Line Interface (CLI)", "Graphical User Interface (GUI)", "Mobile Interface", "Hardware Interface"],
+                correct: 1, // B
+                hint: "Look for the acronym that stands for an interface full of graphics, icons, and clicking elements.",
+                exp: "A Graphical User Interface (GUI) uses visual items like windows, icons, and menus for user interaction."
+            },
+            {
+                q: "A school computer lab restricts students from accessing certain administrative files and prevents unauthorized access to the network. Which operating system function handles this?",
+                options: ["Security management", "Memory management", "File management", "Hardware management"],
+                correct: 0, // A
+                hint: "Think about protections designed to prevent unauthorized entry, restriction of files, and maintaining data safety.",
+                exp: "Security management controls system access rules, tracking password verifications, and protecting network integrity."
+            },
+            {
+                q: "Rohan's uncle bought a new tablet device. Which of the following operating systems is most likely installed on it?",
+                options: ["UNIX", "DOS", "Android", "Linux"],
+                correct: 2, // C
+                hint: "Which of these options is globally common on modern portable touch screen devices like smartphones and tablets?",
+                exp: "Android is a widely popular operating system engineered primarily for mobile, touch-enabled tablets and phones."
+            },
+            {
+                q: "Riya needs to email a folder containing heavy project files to her teacher, but the mail platform says the attachment size is too large. Which utility should she use to reduce the file size?",
+                options: ["Disk Cleanup", "Disk Defragmentation", "System Profiler", "Data Compression tool (like WinZip)"],
+                correct: 3, // D
+                hint: "You need a tool that squeezes or packs data structural elements to reduce overall space consumed.",
+                exp: "Data Compression tools zip data to reduce file sizes, making them easier and quicker to send via email systems."
+            },
+            {
+                q: "Sam's computer is running slow and showing a 'low disk space' warning because of years of accumulated internet cookies and temporary files. Which built-in utility can quickly solve this?",
+                options: ["Data Archiving", "Disk Cleanup", "Screensaver", "File Manager"],
+                correct: 1, // B
+                hint: "Look for a utility designed specifically to clear out junk files and safely wipe storage space clean.",
+                exp: "Disk Cleanup removes junk temporary records, system caches, and cookies to free up valuable hard drive space."
+            },
+            {
+                q: "A company's computer is taking a long time to open large files because the data fragments are saved randomly in scattered locations on the hard disk. Which process will organize this data to make the computer work more efficiently?",
+                options: ["Disk Defragmentation", "Disk Cleanup", "Data Compression", "System Profiling"],
+                correct: 0, // A
+                hint: "This process un-scatters file pieces by pulling disjointed blocks back together into sequential order.",
+                exp: "Disk Defragmentation reorganizes scattered file segments on storage drives so that files open significantly faster."
+            },
+            {
+                q: "Kiran bought a new printer, connected the cable to her laptop, but the computer cannot send printouts to it. What is the most likely reason?",
+                options: ["She needs to install the printer's Device Driver.", "She needs to run Disk Defragmentation.", "She needs to install Application Software like MS Excel.", "She needs to change her Graphical User Interface."],
+                correct: 0, // A
+                hint: "Hardware attachments require a dedicated mini-program to communicate accurately with the operating system layer.",
+                exp: "A Device Driver translates computer print streams into specialized patterns that a distinct model printer understands."
+            },
+            {
+                q: "An old bank still uses CRT monitors. They notice that leaving the same static screen on for a long time damages the display permanently. What utility was originally designed to prevent this 'screen burn-in'?",
+                options: ["Disk Cleanup", "File Manager", "Screensaver", "System Profiler"],
+                correct: 2, // C
+                hint: "This feature activates moving images automatically when the computer sits idle for an extended period.",
+                exp: "Screensavers were initially developed to prevent static images from scorching permanent ghost shadows onto old CRT monitors."
+            },
+            {
+                q: "A technician needs to know the exact hardware attached to a computer and the details of all installed software to fix an issue. Which utility program will provide this detailed information?",
+                options: ["File Manager", "System Profiler", "Disk Cleanup", "Data Archiver"],
+                correct: 1, // B
+                hint: "Think about a tool that generates a comprehensive profile or layout checklist of your internal components.",
+                exp: "A System Profiler tool lists detailed configurations about connected components, chip numbers, memory layouts, and software details."
+            },
+            {
+                q: "When playing a heavy video game, the computer decides how much RAM to allocate to the game and what to remove from the RAM. Which component manages this process?",
+                options: ["Operating System", "Device Driver", "Application Software", "WinRAR"],
+                correct: 0, // A
+                hint: "RAM stands for Random Access Memory. Managing resource distribution falls under core operational system control.",
+                exp: "The Operating System controls memory allocation, tracking which program uses chunks of RAM and distributing it dynamic-style."
+            },
+            {
+                q: "An IT expert types specific text commands into a black screen to fix a network issue, rather than using a mouse to click on icons. What type of interface is he using?",
+                options: ["Graphical User Interface (GUI)", "Command Line Interface (CLI)", "Mobile Interface", "Hardware Interface"],
+                correct: 1, // B
+                hint: "Think about line-by-line typing interfaces that accept pure textual commands via keyboard entry.",
+                exp: "A Command Line Interface (CLI) relies on textual commands typed directly into prompt windows instead of visual layouts."
+            },
+            {
+                q: "A hospital needs to keep old patient records for long-term retention due to legal reasons, even though they aren't actively used. They move these files to less expensive storage. What is this process called?",
+                options: ["Data Archiving", "Data Backup", "Data Compression", "Disk Cleanup"],
+                correct: 0, // A
+                hint: "This term describes relocating static, inactive information blocks for long-term storage, distinct from live copies.",
+                exp: "Data Archiving relocates old, historical records that are no longer in frequent use to secondary, cheaper storage vaults."
+            },
+            {
+                q: "Sarah is organizing her computer by renaming folders, moving files to different drives, and deleting old music tracks. Which utility program handles these operations?",
+                options: ["File Manager", "Device Driver", "System Profiler", "Screensaver"],
+                correct: 0, // A
+                hint: "Consider the daily tool used to navigate directories, copy items, or view directory structural trees.",
+                exp: "A File Manager utility provides tools for navigating directories, renaming items, executing transfers, and managing structures."
+            },
+            {
+                q: "Which of the following best explains the relationship between System Software and Application Software?",
+                options: [
+                    "Application software can run independently without system software.",
+                    "System software cannot run without application software.",
+                    "Application software cannot run without the presence of system software.",
+                    "Both are exactly the same thing and can be used interchangeably."
+                ],
+                correct: 2, // C
+                hint: "Think about building a house: application software represents custom upper furniture, whereas system software acts as the concrete foundation.",
+                exp: "Application programs can only operate when loaded on top of a functional platform environment configured by core System Software."
+            },
+            {
+                q: "You connect a new barcode scanner to a Windows 10 computer. Which of the following is TRUE about the driver needed for this scanner?",
+                options: [
+                    "Drivers are universal and work on any operating system.",
+                    "Drivers are hardware-dependent and operating system specific.",
+                    "The scanner will work immediately without a driver.",
+                    "A driver is an application software used for typing documents."
+                ],
+                correct: 1, // B
+                hint: "Drivers act as specialized pipelines between concrete physical components and a dedicated OS framework.",
+                exp: "Drivers must be tailored for specific hardware equipment models and adjusted exactly to meet individual operating system versions."
+            }
+        ];
+
+        // State Tracking variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let currentAttempt = 1;
+        let timerInterval = null;
+        let timeLeft = 45;
+        let isAudioMuted = false;
+
+        // Audio asset instantiations
+        const rightAudio = new Audio('assets/correct.mp3');
+        const wrongAudio = new Audio('assets/wrong.mp3');
+
+        // Branding Screen Delay logic (Strictly 5 seconds rule)
+        window.addEventListener('DOMContentLoaded', () => {
+            setTimeout(() => {
+                const overlay = document.getElementById('branding-overlay');
+                overlay.style.opacity = '0';
+                setTimeout(() => overlay.classList.add('hidden'), 500);
+            }, 5000);
+        });
+
+        function startQuiz() {
+            document.getElementById('intro-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            loadQuestion();
+        }
+
+        function toggleMute() {
+            isAudioMuted = !isAudioMuted;
+            document.getElementById('mute-btn').innerText = isAudioMuted ? "🔇 Unmute Audio" : "🔊 Mute Audio";
+        }
+
+        function playSound(isCorrect) {
+            if (isAudioMuted) return;
+            try {
+                if (isCorrect) {
+                    rightAudio.currentTime = 0;
+                    rightAudio.play();
+                } else {
+                    wrongAudio.currentTime = 0;
+                    wrongAudio.play();
+                }
+            } catch (e) {
+                console.log("Audio playback blocked or file not found.");
+            }
+        }
+
+        function triggerSparklers() {
+            const container = document.getElementById('confetti-container');
+            container.innerHTML = '';
+            for (let i = 0; i < 30; i++) {
+                const confetti = document.createElement('div');
+                confetti.classList.add('confetti-piece');
+                confetti.style.left = Math.random() * 100 + '%';
+                confetti.style.top = Math.random() * 40 + '%';
+                confetti.style.backgroundColor = ['#2ecc71', '#3498db', '#f1c40f', '#e74c3c', '#9b59b6'][Math.floor(Math.random() * 5)];
+                confetti.style.transform = `scale(${Math.random() * 1.2})`;
+                container.appendChild(confetti);
+            }
+            setTimeout(() => container.innerHTML = '', 1200);
+        }
+
+        function startTimer() {
+            clearInterval(timerInterval);
+            timeLeft = 45;
+            const timerBar = document.getElementById('timer-bar');
+            timerBar.style.width = '100%';
+            
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                const percentage = (timeLeft / 45) * 100;
+                timerBar.style.width = percentage + '%';
+
+                if (timeLeft <= 0) {
+                    clearInterval(timerInterval);
+                    handleTimeout();
+                }
+            }, 1000);
+        }
+
+        function loadQuestion() {
+            clearInterval(timerInterval);
+            currentAttempt = 1;
+            
+            // UI elements update
+            document.getElementById('current-q-num').innerText = currentQuestionIndex + 1;
+            document.getElementById('live-score').innerText = score;
+            document.getElementById('next-btn').classList.add('hidden');
+            
+            const feedbackBox = document.getElementById('feedback-box');
+            feedbackBox.classList.add('hidden');
+            feedbackBox.className = "feedback-box hidden";
+
+            const currentData = quizData[currentQuestionIndex];
+            document.getElementById('question-text').innerText = currentData.q;
+
+            const optionsContainer = document.getElementById('options-container');
+            optionsContainer.innerHTML = '';
+
+            currentData.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.classList.add('option-btn');
+                btn.innerText = option;
+                btn.setAttribute('onclick', `selectOption(this, ${index})`);
+                optionsContainer.appendChild(btn);
+            });
+
+            startTimer();
+        }
+
+        function selectOption(selectedBtn, selectedIdx) {
+            const currentData = quizData[currentQuestionIndex];
+            const feedbackBox = document.getElementById('feedback-box');
+            
+            if (selectedIdx === currentData.correct) {
+                // Correct Answer selected
+                clearInterval(timerInterval);
+                selectedBtn.classList.add('correct');
+                playSound(true);
+                triggerSparklers();
+                
+                // Score adjustment based on attempt
+                if (currentAttempt === 1) {
+                    score++;
+                } else {
+                    score += 0.5; // Half credit for second attempt
+                }
+                document.getElementById('live-score').innerText = score;
+                
+                feedbackBox.className = "feedback-box explanation";
+                feedbackBox.innerHTML = `<strong>✨ Correct!</strong> ${currentData.exp}`;
+                feedbackBox.classList.remove('hidden');
+                
+                disableAllOptions();
+                document.getElementById('next-btn').classList.remove('hidden');
+            } else {
+                // Wrong Answer selected
+                if (currentAttempt === 1) {
+                    // First wrong attempt: give a retry and hint
+                    currentAttempt = 2;
+                    selectedBtn.classList.add('wrong');
+                    selectedBtn.disabled = true;
+                    playSound(false);
+                    
+                    feedbackBox.className = "feedback-box hint";
+                    feedbackBox.innerHTML = `<strong>💡 Try Again (Hint):</strong> ${currentData.hint}`;
+                    feedbackBox.classList.remove('hidden');
+                } else {
+                    // Second wrong attempt: reveal correct option and short explanation
+                    clearInterval(timerInterval);
+                    selectedBtn.classList.add('wrong');
+                    playSound(false);
+                    
+                    highlightCorrectOption(currentData.correct);
+                    
+                    feedbackBox.className = "feedback-box explanation";
+                    feedbackBox.innerHTML = `<strong>Incorrect.</strong> ${currentData.exp}`;
+                    feedbackBox.classList.remove('hidden');
+                    
+                    disableAllOptions();
+                    document.getElementById('next-btn').classList.remove('hidden');
+                }
+            }
+        }
+
+        function handleTimeout() {
+            const currentData = quizData[currentQuestionIndex];
+            const feedbackBox = document.getElementById('feedback-box');
+            
+            highlightCorrectOption(currentData.correct);
+            feedbackBox.className = "feedback-box explanation";
+            feedbackBox.innerHTML = `<strong>⏳ Time is Up!</strong> ${currentData.exp}`;
+            feedbackBox.classList.remove('hidden');
+            
+            disableAllOptions();
+            document.getElementById('next-btn').classList.remove('hidden');
+        }
+
+        function highlightCorrectOption(correctIdx) {
+            const buttons = document.querySelectorAll('.option-btn');
+            if(buttons[correctIdx]) {
+                buttons[correctIdx].classList.add('correct');
+            }
+        }
+
+        function disableAllOptions() {
+            const buttons = document.querySelectorAll('.option-btn');
+            buttons.forEach(btn => btn.disabled = true);
+        }
+
+        function nextQuestion() {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < quizData.length) {
+                loadQuestion();
+            } else {
+                showResults();
+            }
+        }
+
+        function showResults() {
+            clearInterval(timerInterval);
+            document.getElementById('quiz-screen').classList.add('hidden');
+            document.getElementById('results-screen').classList.remove('hidden');
+            
+            // Normalize score value displaying clean string representations
+            const totalQuestions = quizData.length;
+            document.getElementById('final-score').innerText = `${score} / ${totalQuestions}`;
+            
+            const successRate = (score / totalQuestions) * 100;
+            const messageElement = document.getElementById('result-message');
+            
+            if (successRate >= 75) {
+                messageElement.innerText = "Good job! 🌟";
+                messageElement.style.color = "var(--success-color)";
+            } else if (successRate >= 40) {
+                messageElement.innerText = "Review this chapter and try again! 📚";
+                messageElement.style.color = "#d35400";
+            } else {
+                messageElement.innerText = "Let’s practise more! 💪";
+                messageElement.style.color = "var(--error-color)";
+            }
+        }
+
+        function restartQuiz() {
+            currentQuestionIndex = 0;
+            score = 0;
+            document.getElementById('results-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+            loadQuestion();
+        }
+    </script>
+</body>
+</html>
