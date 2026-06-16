@@ -1,0 +1,181 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Computer Networks - Interactive Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f4f9; 
+            margin: 0; 
+            min-height: 100vh;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            padding: 10px;
+        }
+        #quiz-container { 
+            background: white; 
+            width: 100%; 
+            max-width: 600px; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+        #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .option-btn { 
+            border: 2px solid blue; 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin: 8px 0; 
+            background: white; 
+            cursor: pointer; 
+            display: block; 
+            width: 100%; 
+            font-size: 1rem;
+            font-weight: 600; 
+            font-family: inherit; 
+            transition: background 0.2s;
+        }
+        .option-btn:active { background: #eef; }
+        .hint-box { background: #ffcccc; padding: 12px; border-radius: 8px; margin-top: 15px; color: #333; font-weight: bold; }
+        .feedback-correct { border: 2px solid green; background: #d4edda; padding: 12px; border-radius: 8px; color: #155724; font-weight: bold; margin-top: 15px; }
+        #logo-screen, #intro-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 9999; 
+            padding: 20px;
+        }
+        .hidden { display: none !important; }
+        #q-text { font-weight: bold; font-size: 1.1rem; margin-bottom: 20px; text-align: left; line-height: 1.4; }
+        
+        /* Mobile Optimization */
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            #q-text { font-size: 1rem; }
+            .option-btn { padding: 14px; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="logo-screen"><img src="assets/innovine-logo.png" alt="Logo" style="max-width: 80%;"></div>
+
+<div id="intro-screen" class="hidden">
+    <h1>Computer Networks</h1>
+    <p><strong>Grade 7 | ICT Chapter 2</strong></p>
+    <button onclick="startQuiz()" style="padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 8px;">Start Quiz</button>
+</div>
+
+<div id="quiz-container">
+    <div id="game-area" class="hidden">
+        <div id="top-bar">
+            <div id="timer">45s</div>
+            <div id="score-display">Score: 0</div>
+        </div>
+        <div id="q-text"></div>
+        <div id="options"></div>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "A student pairs her wireless headphones to her smartwatch to listen to music while jogging. Which type of network is she actively using?", a: "B) Personal Area Network (PAN)", options: ["A) Local Area Network (LAN)", "B) Personal Area Network (PAN)", "C) Metropolitan Area Network (MAN)", "D) Wide Area Network (WAN)"], hint: "This network covers a very small range, typically centered around a single person." },
+        { q: "A local bank wants to securely connect its main headquarters to five other branches located across the same city. Which network category is most suitable for this geographic span?", a: "C) MAN (Metropolitan Area Network)", options: ["A) CAN (Campus Area Network)", "B) PAN (Personal Area Network)", "C) MAN (Metropolitan Area Network)", "D) WAN (Wide Area Network)"], hint: "This category covers a city-wide area." },
+        { q: "An IT manager is setting up a new office network. He wants a central device that receives data and intelligently sends it ONLY to the specific destination address it was meant for, rather than broadcasting it to everyone. Which device should he purchase?", a: "B) Switch", options: ["A) Hub", "B) Switch", "C) Modem", "D) Network Interface Card"], hint: "Unlike a Hub, this device uses MAC addresses to send data only to the intended recipient." },
+        { q: "While working from home, John's computer processes digital signals, but his internet connection relies on data travelling over communication media in an analog format. Which hardware device makes this conversion between digital and analog possible?", a: "D) Modem", options: ["A) Router", "B) Switch", "C) Hub", "D) Modem"], hint: "The name comes from 'MOdulator-DEModulator'." },
+        { q: "A school computer lab has 20 computers connected to a single, long central cable. While cleaning, a janitor accidentally cuts this central cable, causing the entire lab's network to stop working immediately. What network topology does this lab use?", a: "C) Bus Topology", options: ["A) Star Topology", "B) Ring Topology", "C) Bus Topology", "D) Mesh Topology"], hint: "All nodes share a single communication line (backbone)." },
+        { q: "A hospital wants to ensure its critical patient-monitoring network never goes down. They decide to implement a topology where every single node is connected to every other node in the network, despite the high cost and difficult setup. Which topology is this?", a: "A) Mesh Topology", options: ["A) Mesh Topology", "B) Ring Topology", "C) Bus Topology", "D) Star Topology"], hint: "This topology provides the highest redundancy by connecting every device to every other device." },
+        { q: "When a user types a web address into their browser to read a news article online, which protocol is primarily initiated to format, retrieve, and publish the hypertext page?", a: "C) HTTP", options: ["A) FTP", "B) SMTP", "C) HTTP", "D) POP"], hint: "This protocol is the foundation of data communication on the World Wide Web." },
+        { q: "You are downloading a large educational video on your PC. The video data is sent over the internet in small chunks called 'packets'. Which specific protocol ensures these packets are put together in the correct order once they reach your computer?", a: "B) Transmission Control Protocol (TCP)", options: ["A) Internet Protocol (IP)", "B) Transmission Control Protocol (TCP)", "C) File Transfer Protocol (FTP)", "D) Simple Mail Transfer Protocol (SMTP)"], hint: "This protocol is responsible for the reliable delivery and reassembly of data packets." },
+        { q: "An architect needs to upload heavy 3D design files directly to a remote server for a client to access. Which protocol is specifically designed for uploading or downloading such files between a client and a server?", a: "A) FTP", options: ["A) FTP", "B) HTTP", "C) POP", "D) TCP"], hint: "As the name suggests, it is designed solely for file transfers." },
+        { q: "A corporate office uses a network where all computers are connected to a central Switch. One day, the Switch experiences a power failure, and no one can access the network. However, if a single employee's computer breaks, the rest of the network functions normally. What topology is this?", a: "D) Star Topology", options: ["A) Ring Topology", "B) Bus Topology", "C) Hybrid Topology", "D) Star Topology"], hint: "In this topology, every node is connected individually to a central hub or switch." },
+        { q: "An employee clicks 'Send' on an outgoing email to their boss. Later, the boss uses their email program to retrieve the incoming message. Which two protocols are used for pushing and retrieving the email, respectively?", a: "A) SMTP to send, POP to retrieve", options: ["A) SMTP to send, POP to retrieve", "B) POP to send, SMTP to retrieve", "C) HTTP to send, FTP to retrieve", "D) FTP to send, HTTP to retrieve"], hint: "SMTP stands for Simple Mail Transfer Protocol." },
+        { q: "A multinational corporation connects its offices in Tokyo, London, and New York to share internal resources seamlessly. Which network type is basically a collection of LANs or MANs covering this massive geographical area (continents)?", a: "B) WAN", options: ["A) CAN", "B) WAN", "C) MAN", "D) PAN"], hint: "This type of network spans the largest geographical distances." },
+        { q: "In a client/server model at a library, one powerful computer is responsible for the central storage and management of all the e-books and databases so that other computers can access them. What is this specific node called?", a: "A) File Server", options: ["A) File Server", "B) Standalone Computer", "C) Workstation", "D) Router"], hint: "It is a central node that 'serves' files to clients." },
+        { q: "A home user wants to connect their local area network (LAN) to the broader internet. They need a device that intelligently directs internet traffic towards its correct destination. Which hardware device is required?", a: "C) Router", options: ["A) Hub", "B) Network Interface Card", "C) Router", "D) Switch"], hint: "This device connects different networks together, such as your home network to the internet." },
+        { q: "In an older factory setup, data passes from one workstation to the next in a circular layout. All data traffic moves in the same direction to avoid data conflict, but if a single machine is switched off, the entire network drops. Which topology is installed here?", a: "D) Ring Topology", options: ["A) Star Topology", "B) Mesh Topology", "C) Bus Topology", "D) Ring Topology"], hint: "The devices are connected in a closed-loop configuration." }
+    ];
+
+    let currentQ = 0, score = 0, attempts = 0, timer, timeLeft = 45;
+    const correctSound = new Audio('assets/correct.mp3');
+    const wrongSound = new Audio('assets/wrong.mp3');
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('logo-screen').classList.add('hidden');
+            document.getElementById('intro-screen').classList.remove('hidden');
+        }, 5000);
+    });
+
+    function startQuiz() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        clearInterval(timer);
+        attempts = 0; timeLeft = 45;
+        document.getElementById('timer').innerText = timeLeft + "s";
+        document.getElementById('feedback').className = "";
+        document.getElementById('feedback').innerText = "";
+        
+        const q = questions[currentQ];
+        document.getElementById('q-text').innerHTML = (currentQ + 1) + ". " + q.q;
+        const optDiv = document.getElementById('options');
+        optDiv.innerHTML = "";
+        q.options.forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = o;
+            btn.onclick = () => checkAnswer(o);
+            optDiv.appendChild(btn);
+        });
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if(timeLeft <= 0) { clearInterval(timer); nextQuestion(); }
+        }, 1000);
+    }
+
+    function checkAnswer(choice) {
+        const feedback = document.getElementById('feedback');
+        if(choice === questions[currentQ].a) {
+            score++;
+            document.getElementById('score-display').innerText = "Score: " + score;
+            feedback.className = 'feedback-correct';
+            feedback.innerText = "Correct!";
+            correctSound.play();
+            confetti();
+            setTimeout(nextQuestion, 1000);
+        } else {
+            attempts++;
+            wrongSound.play();
+            if(attempts < 2) {
+                feedback.className = 'hint-box';
+                feedback.innerText = "Hint: " + questions[currentQ].hint;
+            } else {
+                feedback.className = 'feedback-correct';
+                feedback.innerText = "Correct answer was: " + questions[currentQ].a;
+                setTimeout(nextQuestion, 2000);
+            }
+        }
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if(currentQ < questions.length) renderQuestion();
+        else {
+            document.getElementById('game-area').innerHTML = `<h1>Quiz Finished!</h1><p>Score: ${score}/${questions.length}</p><button onclick="location.reload()" style="padding: 15px 30px; cursor: pointer;">Restart Quiz</button>`;
+        }
+    }
+</script>
+</body>
+</html>
