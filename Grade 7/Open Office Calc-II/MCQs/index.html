@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenOffice Calc Advanced - Interactive Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f4f9; 
+            margin: 0; 
+            min-height: 100vh;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            padding: 10px;
+        }
+        #quiz-container { 
+            background: white; 
+            width: 100%; 
+            max-width: 600px; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+        #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .option-btn { 
+            border: 2px solid blue; 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin: 8px 0; 
+            background: white; 
+            cursor: pointer; 
+            display: block; 
+            width: 100%; 
+            font-size: 1rem;
+            font-weight: 600; 
+            font-family: inherit; 
+            transition: background 0.2s;
+        }
+        .option-btn:active { background: #eef; }
+        .hint-box { background: #ffcccc; padding: 12px; border-radius: 8px; margin-top: 15px; color: #333; font-weight: bold; }
+        .feedback-correct { border: 2px solid green; background: #d4edda; padding: 12px; border-radius: 8px; color: #155724; font-weight: bold; margin-top: 15px; }
+        #logo-screen, #intro-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 9999; 
+            padding: 20px;
+        }
+        .hidden { display: none !important; }
+        #q-text { font-weight: bold; font-size: 1.1rem; margin-bottom: 20px; text-align: left; line-height: 1.4; }
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            #q-text { font-size: 1rem; }
+            .option-btn { padding: 14px; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="logo-screen"><img src="assets/innovine-logo.png" alt="Logo" style="max-width: 80%;"></div>
+
+<div id="intro-screen" class="hidden">
+    <h1>Advanced Features in Calc</h1>
+    <p><strong>Grade 7 | ICT Chapter 4</strong></p>
+    <button onclick="startQuiz()" style="padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 8px;">Start Quiz</button>
+</div>
+
+<div id="quiz-container">
+    <div id="game-area" class="hidden">
+        <div id="top-bar">
+            <div id="timer">45s</div>
+            <div id="score-display">Score: 0</div>
+        </div>
+        <div id="q-text"></div>
+        <div id="options"></div>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "A store manager wants to calculate the final price of items by multiplying their base price by a fixed tax rate stored in cell $G$2. He wants to ensure that when he copies the formula down the column, the reference to the tax rate cell does not change. Which type of cell reference is he using?", a: "C) Absolute Reference", options: ["A) Relative Reference", "B) Mixed Reference", "C) Absolute Reference", "D) Standard Reference"], hint: "This reference uses '$' signs to lock the cell coordinate." },
+        { q: "A teacher uses the formula =C2+D2 to calculate the total marks of the first student in row 2. When she copies and pastes this formula to row 3 for the next student, the formula automatically changes to =C3+D3. What type of referencing is Calc using here?", a: "B) Relative Reference", options: ["A) Absolute Reference", "B) Relative Reference", "C) Auto Reference", "D) Mixed Reference"], hint: "This reference changes automatically when copied to a new location." },
+        { q: "An HR manager is creating an employee database and wants to ensure that the 'Age' column only accepts whole numbers between 18 and 60. Which OpenOffice Calc feature should they use to enforce this rule?", a: "B) Data Validation", options: ["A) Conditional Formatting", "B) Data Validation", "C) Pivot Table", "D) AutoFill"], hint: "This feature restricts the type of data entered into a cell." },
+        { q: "A school principal wants to quickly identify all students who scored less than 35 marks by making those specific cells automatically turn red. Which feature should the principal use?", a: "D) Conditional Formatting", options: ["A) Data Validation", "B) Auto Format", "C) Pivot Table", "D) Conditional Formatting"], hint: "This feature applies specific formats based on cell values." },
+        { q: "A data entry operator has a list of employees' first names in Column A and last names in Column B. He wants to combine them into a single 'Full Name' in Column C. Which text function should he use?", a: "C) =CONCATENATE()", options: ["A) =LEN()", "B) =UPPER()", "C) =CONCATENATE()", "D) =PRODUCT()"], hint: "This function is used to join strings of text together." },
+        { q: "A business owner is calculating the average daily sales by dividing the total sales by the number of working days. By mistake, the cell containing the number of working days is left empty. Which error will Calc display?", a: "D) #DIV/0!", options: ["A) #NAME?", "B) #REF!", "C) #VALUE!", "D) #DIV/0!"], hint: "Dividing by zero or an empty cell causes this specific math error." },
+        { q: "You type 'Monday' into a cell, click on the small square at the bottom right corner of the cell, and drag it down to automatically fill the next cells with 'Tuesday', 'Wednesday', etc. What is this time-saving feature called?", a: "B) AutoFill", options: ["A) Auto Complete", "B) AutoFill", "C) Data Series", "D) Data Validation"], hint: "Use the small black square handle to extend patterns." },
+        { q: "An accountant is entering a massive 15-digit bank account number into a cell, but once she presses Enter, the cell just displays '#######'. What does this indicate?", a: "C) The data in the cell is longer than the cell's width.", options: ["A) The formula is incorrect.", "B) The formula refers to an invalid cell.", "C) The data in the cell is longer than the cell's width.", "D) The cell contains text instead of numbers."], hint: "This happens when the cell is too narrow to display the full number." },
+        { q: "A company tracks thousands of daily sales records. The manager wants to generate a quick summary report showing the total amount of sales per store without writing complex formulas. Which powerful tool should they use?", a: "C) Pivot Table", options: ["A) Conditional Formatting", "B) IF() Function", "C) Pivot Table", "D) Data Validation"], hint: "This tool is used for summarizing and analyzing large datasets." },
+        { q: "A teacher needs to categorize students based on their percentages. If a student scores 75 or above, they get a 'Distinction'; otherwise, they are categorized as 'Others'. Which function is specifically designed to evaluate this condition and return one of the two values?", a: "B) =IF()", options: ["A) =AVERAGE()", "B) =IF()", "C) =ABS()", "D) =TODAY()"], hint: "This logical function tests a condition and performs an action based on the result." },
+        { q: "A user wants to print the exact current date and time on a digital receipt generated in OpenOffice Calc. Which of the following functions should they use?", a: "D) =NOW()", options: ["A) =TODAY()", "B) =TIME()", "C) =DATE()", "D) =NOW()"], hint: "This function returns both the current date and the current time." },
+        { q: "A student mistakenly types =seema(B3;C3) instead of =SUM(B3;C3) to add two numbers. What error will OpenOffice Calc display to indicate an error in the function name?", a: "B) #NAME?", options: ["A) #REF!", "B) #NAME?", "C) #DIV/0!", "D) #VALUE!"], hint: "This error appears when the software doesn't recognize the name of the function." },
+        { q: "While typing a list of cities in a column, a user types 'New', and OpenOffice Calc automatically suggests 'New York' because it was previously entered in the same column. What is this feature called?", a: "A) Auto Complete", options: ["A) Auto Complete", "B) AutoFill", "C) Conditional Formatting", "D) Data Validation"], hint: "This feature guesses the word you are typing based on previous entries." },
+        { q: "A cashier has a negative balance of '-450' in a cell, but for a specific report, they need to display the absolute positive value '450' without the negative sign. Which mathematical function should they apply?", a: "C) =ABS()", options: ["A) =ROUND()", "B) =LCM()", "C) =ABS()", "D) =PRODUCT()"], hint: "This function returns the absolute value of a number." },
+        { q: "A formula = B$1 + C$1 is written in cell D1. It uses an absolute row but a relative column. If this formula is copied to cell E1, what will it change to?", a: "A) = C$1 + D$1", options: ["A) = C$1 + D$1", "B) = $B$1 + $C$1", "C) = B$2 + C$2", "D) = C$2 + D$2"], hint: "The column references change relatively, but the row reference remains locked." }
+    ];
+
+    let currentQ = 0, score = 0, attempts = 0, timer, timeLeft = 45;
+    const correctSound = new Audio('assets/correct.mp3');
+    const wrongSound = new Audio('assets/wrong.mp3');
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('logo-screen').classList.add('hidden');
+            document.getElementById('intro-screen').classList.remove('hidden');
+        }, 5000);
+    });
+
+    function startQuiz() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        clearInterval(timer);
+        attempts = 0; timeLeft = 45;
+        document.getElementById('timer').innerText = timeLeft + "s";
+        document.getElementById('feedback').className = "";
+        document.getElementById('feedback').innerText = "";
+        
+        const q = questions[currentQ];
+        document.getElementById('q-text').innerHTML = (currentQ + 1) + ". " + q.q;
+        const optDiv = document.getElementById('options');
+        optDiv.innerHTML = "";
+        q.options.forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = o;
+            btn.onclick = () => checkAnswer(o);
+            optDiv.appendChild(btn);
+        });
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if(timeLeft <= 0) { clearInterval(timer); nextQuestion(); }
+        }, 1000);
+    }
+
+    function checkAnswer(choice) {
+        const feedback = document.getElementById('feedback');
+        if(choice === questions[currentQ].a) {
+            score++;
+            document.getElementById('score-display').innerText = "Score: " + score;
+            feedback.className = 'feedback-correct';
+            feedback.innerText = "Correct!";
+            correctSound.play();
+            confetti();
+            setTimeout(nextQuestion, 1000);
+        } else {
+            attempts++;
+            wrongSound.play();
+            if(attempts < 2) {
+                feedback.className = 'hint-box';
+                feedback.innerText = "Hint: " + questions[currentQ].hint;
+            } else {
+                feedback.className = 'feedback-correct';
+                feedback.innerText = "Correct answer was: " + questions[currentQ].a;
+                setTimeout(nextQuestion, 2000);
+            }
+        }
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if(currentQ < questions.length) renderQuestion();
+        else {
+            document.getElementById('game-area').innerHTML = `<h1>Quiz Finished!</h1><p style="font-size: 1.5rem;">Score: ${score}/${questions.length}</p><button onclick="location.reload()" style="padding: 15px 30px; cursor: pointer;">Restart Quiz</button>`;
+        }
+    }
+</script>
+</body>
+</html>
