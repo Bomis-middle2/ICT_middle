@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 5 ICT - Chapter 6 Interactive Quiz</title>
+    <style>
+        :root { --primary-color: #2b579a; --secondary-color: #e2e9f3; --success-color: #2bc474; --error-color: #e74c3c; --text-dark: #2c3e50; --background: #f8f9fa; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, sans-serif; }
+        body { background-color: var(--background); display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 15px; }
+        
+        .quiz-container { background: white; width: 100%; max-width: 650px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,0,0,0.1); position: relative; min-height: 450px; display: flex; flex-direction: column; overflow: hidden; }
+
+        /* Splash Screen */
+        #splash-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; justify-content: center; align-items: center; z-index: 100; transition: opacity 0.5s ease; }
+        #splash-screen img { max-width: 250px; }
+        
+        .view { display: none; padding: 30px; flex-direction: column; flex-grow: 1; }
+        .view.active { display: flex; }
+
+        .quiz-header { padding: 15px 30px; border-bottom: 2px solid var(--secondary-color); display: flex; justify-content: space-between; align-items: center; }
+        .intro-title { color: var(--primary-color); text-align: center; margin-bottom: 15px; }
+        .meta-info { background: var(--secondary-color); padding: 15px; border-radius: 8px; margin-bottom: 25px; line-height: 1.8; }
+        
+        .btn-primary { background-color: var(--primary-color); color: white; border: none; padding: 14px; font-weight: bold; border-radius: 8px; cursor: pointer; width: 100%; margin-top: auto; }
+        .btn-audio { cursor: pointer; border: none; background: var(--secondary-color); padding: 5px 10px; border-radius: 5px; }
+        
+        .question-meta { display: flex; justify-content: space-between; font-weight: bold; margin-bottom: 10px; color: #666; }
+        .question-text { font-size: 18px; font-weight: 600; margin-bottom: 20px; white-space: pre-line; }
+        .options-container { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+        .option-btn { border: 2px solid var(--secondary-color); padding: 14px; text-align: left; cursor: pointer; border-radius: 8px; background: white; }
+        
+        .option-btn.correct { background: #d4edda !important; border-color: var(--success-color) !important; color: #155724; }
+        .option-btn.wrong { background: #f8d7da !important; border-color: var(--error-color) !important; color: #721c24; }
+        
+        .feedback-box { padding: 15px; border-radius: 8px; margin-top: 10px; display: none; white-space: pre-line; }
+        .feedback-box.hint { background: #fff3cd; border-left: 5px solid #ffc107; color: #856404; }
+        .feedback-box.explanation { background: #e2f0d9; border-left: 5px solid var(--success-color); color: #385723; }
+        
+        #confetti-canvas { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 99; }
+    </style>
+</head>
+<body>
+    <canvas id="confetti-canvas"></canvas>
+    <div class="quiz-container">
+        <div id="splash-screen"><img src="assets/innovine-logo.png" alt="Logo"></div>
+
+        <div class="quiz-header">
+            <div id="score-display">Score: 0</div>
+            <button class="btn-audio" id="audio-toggle" onclick="toggleAudio()">🔊 Sound</button>
+        </div>
+
+        <div id="intro-view" class="view active">
+            <h1 class="intro-title">Grade 5 ICT — Chapter 6 Practice</h1>
+            <div class="meta-info">
+                <p><strong>Grade:</strong> 5</p>
+                <p><strong>Subject:</strong> ICT</p>
+                <p><strong>Topic:</strong> OpenOffice Impress-II</p>
+                <p><strong>Number of Questions:</strong> 12</p>
+            </div>
+            <button class="btn-primary" onclick="startQuiz()">Start Practice</button>
+        </div>
+
+        <div id="question-view" class="view">
+            <div class="question-meta">
+                <span id="question-number"></span>
+                <span id="timer-display">Time: 45s</span>
+            </div>
+            <div class="question-text" id="question-text"></div>
+            <div class="options-container" id="options-block"></div>
+            <div class="feedback-box" id="feedback-block"></div>
+            <button class="btn-primary" id="action-btn" style="display:none;" onclick="handleActionClick()">Next</button>
+        </div>
+
+        <div id="result-view" class="view">
+            <h2 class="intro-title">Practice Completed!</h2>
+            <div style="text-align: center; font-size: 24px; margin: 20px;" id="final-score"></div>
+            <button class="btn-primary" onclick="location.reload()">Restart</button>
+        </div>
+    </div>
+
+    <script>
+        const quizData = [
+            { q: "Swapna is starting a new project on 'Pollution'. Before she even opens OpenOffice Impress, what should her first step be to ensure a well-organized presentation?", options: ["Gather and categorise information", "Add animations to empty slides", "Choose a dark background", "Insert random images from the web"], correct: 0, hint: "Planning is essential.", explanation: "Gather and categorise information." },
+            { q: "According to the design guidelines for Grade 5, what is the ideal number of sub-points (bullets) a single slide should contain to remain clear and readable?", options: ["Exactly 2", "At least 10", "Approximately 6", "Maximum of 4"], correct: 2, hint: "Don't overcrowd the slide.", explanation: "Approximately 6 bullet points." },
+            { q: "Aman wants his presentation to look professional. He used 5 different fonts and 8 different colors on one slide. Which design guideline did he violate?", options: ["Use more colors for variety", "Use animations on every word", "Maintain uniform fonts and colors", "Insert more media clips"], correct: 2, hint: "Design should be consistent.", explanation: "Maintain uniform fonts and colors." },
+            { q: "Seema wants a specific picture of a 'Sun' to grow larger when she clicks on it during her presentation. Which feature should she use?", options: ["Slide Transition", "Slide Show", "Custom Animation", "Slide Layout"], correct: 2, hint: "You want the object to move.", explanation: "Custom Animation." },
+            { q: "Identify the animation category that does NOT belong to the standard ways an object behaves on a slide:", options: ["Slide Transition", "Entrance", "Exit", "Motion Path"], correct: 0, hint: "This applies to the slide, not an object.", explanation: "Slide Transition." },
+            { q: "While practicing her presentation, Seema notices that her slides change too quickly before she finishes speaking. Which setting should she adjust to fix this?", options: ["Text formatting", "Image size", "Animation speed", "Advance Slide options"], correct: 3, hint: "How do slides move?", explanation: "Advance Slide options." },
+            { q: "Statement: Text color should always contrast strongly with the background color.\nReason: High contrast improves the visibility and readability for the audience.", options: ["Both Statement and Reason are true, and Reason explains Statement", "Statement is true, but Reason is false", "Both are false", "Statement is false, but Reason is true"], correct: 0, hint: "Contrast is for readability.", explanation: "Both Statement and Reason are true, and Reason explains Statement." },
+            { q: "Rahul wants to add a background song to his 'Travel' presentation. Which feature is specifically designed for this?", options: ["Drawing Toolbar", "Slide Sorter", "Media Clips", "Outline View"], correct: 2, hint: "Use this for audio.", explanation: "Media Clips." },
+            { q: "Deepa applied a 'Fade' transition to Slide 2. She then decided she liked 'Wipe' better and applied it to the same slide. What happened to the 'Fade' transition?", options: ["It is automatically removed", "It stays and works with Wipe", "The slide is deleted", "The computer crashes"], correct: 0, hint: "Only one transition works at a time.", explanation: "It is automatically removed." },
+            { q: "When Ayan moved his presentation folder to a USB drive, his video clips stopped playing. Where should media files be stored to avoid this 'broken link' problem?", options: ["On the Desktop", "Only on the Internet", "In the C: drive", "In the same folder as the presentation"], correct: 3, hint: "Keep them together.", explanation: "In the same folder as the presentation." },
+            { q: "You are presenting 'Space Exploration'. You want a button on your last slide that, when clicked, automatically opens NASA's website for the audience. Which tool allows you to connect slides to web pages?", options: ["Animation", "Gallery", "Action Button", "Layout"], correct: 2, hint: "Use this for interactive clicks.", explanation: "Action Button." },
+            { q: "Before you go on stage for the final school assembly, what is the most important step to take regarding your presentation?", options: ["Add 10 more slides", "Preview the entire Slide Show", "Delete all images to save space", "Change the theme colors at the last minute"], correct: 1, hint: "Always check the final result.", explanation: "Preview the entire Slide Show." }
+        ];
+
+        let currentQuestionIndex = 0, score = 0, attemptsLeft = 2, timer = 45, timerInterval = null, muted = false;
+        const correctAudio = new Audio('assets/correct.mp3');
+        const wrongAudio = new Audio('assets/wrong.mp3');
+
+        window.addEventListener('load', () => { setTimeout(() => { document.getElementById('splash-screen').style.opacity = '0'; setTimeout(() => document.getElementById('splash-screen').style.display = 'none', 500); }, 5000); });
+        function toggleAudio() { muted = !muted; document.getElementById('audio-toggle').textContent = muted ? "🔇 Mute" : "🔊 Sound"; }
+        function startQuiz() { document.getElementById('intro-view').classList.remove('active'); document.getElementById('question-view').classList.add('active'); loadQuestion(); }
+
+        function startTimer() {
+            timer = 45;
+            document.getElementById('timer-display').textContent = `Time: ${timer}s`;
+            timerInterval = setInterval(() => { timer--; document.getElementById('timer-display').textContent = `Time: ${timer}s`; if (timer <= 0) { clearInterval(timerInterval); handleActionClick(); } }, 1000);
+        }
+
+        function loadQuestion() {
+            clearInterval(timerInterval); startTimer(); attemptsLeft = 2;
+            const qData = quizData[currentQuestionIndex];
+            document.getElementById('question-number').textContent = `Q ${currentQuestionIndex + 1} of 12`;
+            document.getElementById('question-text').textContent = qData.q;
+            document.getElementById('options-block').innerHTML = '';
+            document.getElementById('feedback-block').style.display = 'none';
+            document.getElementById('action-btn').style.display = 'none';
+            qData.options.forEach((opt, idx) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = opt;
+                btn.onclick = () => submitAnswer(idx, btn);
+                document.getElementById('options-block').appendChild(btn);
+            });
+        }
+
+        function submitAnswer(idx, btn) {
+            const qData = quizData[currentQuestionIndex];
+            const feedback = document.getElementById('feedback-block');
+            if (idx === qData.correct) {
+                if (!muted) correctAudio.play();
+                triggerSparklers();
+                if (attemptsLeft === 2) score += 10;
+                btn.classList.add('correct');
+                feedback.innerHTML = `Correct!<br>${qData.explanation}`;
+                feedback.className = 'feedback-box explanation';
+                feedback.style.display = 'block';
+                Array.from(document.getElementById('options-block').children).forEach(b => b.disabled = true);
+                clearInterval(timerInterval); document.getElementById('action-btn').style.display = 'block';
+            } else {
+                if (!muted) wrongAudio.play();
+                attemptsLeft--;
+                btn.classList.add('wrong');
+                btn.disabled = true;
+                if (attemptsLeft === 1) { feedback.innerHTML = `Try again! Hint: ${qData.hint}`; feedback.className = 'feedback-box hint'; feedback.style.display = 'block'; }
+                else { feedback.innerHTML = `Review: ${qData.explanation}`; feedback.className = 'feedback-box explanation'; feedback.style.display = 'block'; Array.from(document.getElementById('options-block').children).forEach(b => b.disabled = true); document.getElementById('options-block').children[qData.correct].classList.add('correct'); clearInterval(timerInterval); document.getElementById('action-btn').style.display = 'block'; }
+            }
+            document.getElementById('score-display').textContent = `Score: ${score}`;
+        }
+
+        function handleActionClick() {
+            if (currentQuestionIndex < quizData.length - 1) { currentQuestionIndex++; loadQuestion(); }
+            else { 
+                document.getElementById('question-view').classList.remove('active'); 
+                document.getElementById('result-view').classList.add('active');
+                const percent = Math.round((score / (quizData.length * 10)) * 100);
+                let msg = percent >= 75 ? "Good job" : (percent >= 40 ? "Review this chapter and try again" : "Let’s practise more");
+                document.getElementById('final-score').innerHTML = `Final Score: ${score}<br><small style="font-size:18px;">${msg}</small>`;
+            }
+        }
+
+        const canvas = document.getElementById('confetti-canvas'), ctx = canvas.getContext('2d');
+        let particles = [];
+        function triggerSparklers() {
+            canvas.width = canvas.parentElement.clientWidth; canvas.height = canvas.parentElement.clientHeight;
+            for (let i = 0; i < 60; i++) particles.push({ x: canvas.width / 2, y: canvas.height / 2, radius: Math.random() * 4 + 2, color: `hsl(${Math.random() * 360}, 80%, 60%)`, vx: (Math.random() - 0.5) * 8, vy: (Math.random() - 0.5) * 8 - 3, alpha: 1, decay: 0.02 });
+            if(particles.length <= 60) requestAnimationFrame(render);
+        }
+        function render() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, i) => { p.x += p.vx; p.y += p.vy; p.vy += 0.1; p.alpha -= p.decay; ctx.fillStyle = p.color; ctx.globalAlpha = p.alpha; ctx.beginPath(); ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2); ctx.fill(); if (p.alpha <= 0) particles.splice(i, 1); });
+            if (particles.length > 0) requestAnimationFrame(render);
+        }
+    </script>
+</body>
+</html>
