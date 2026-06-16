@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpenOffice Impress - Interactive Quiz</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        #quiz-container { background: white; width: 95%; max-width: 600px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .option-btn { border: 2px solid blue; border-radius: 15px; padding: 15px; margin: 10px 0; background: white; cursor: pointer; display: block; width: 100%; font-weight: bold; font-family: inherit; }
+        .hint-box { background: #ffcccc; padding: 10px; border-radius: 8px; margin-top: 15px; color: #333; font-weight: bold; }
+        .feedback-correct { border: 2px solid green; background: #d4edda; padding: 10px; border-radius: 8px; color: #155724; font-weight: bold; margin-top: 15px; }
+        #logo-screen, #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .hidden { display: none !important; }
+        img { max-width: 90%; height: auto; margin: 10px 0; border: 1px solid #ccc; }
+        #q-text { font-weight: bold; font-size: 1.0rem; margin-bottom: 15px; text-align: left; }
+        #confetti { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; background: url('https://raw.githubusercontent.com/catdad/canvas-confetti/master/demo/confetti.png') center/cover; display: none; z-index: 2000; }
+    </style>
+</head>
+<body>
+
+<div id="logo-screen"><img src="assets/innovine-logo.png" alt="Logo"></div>
+
+<div id="intro-screen" class="hidden">
+    <h1>OpenOffice Impress Challenge</h1>
+    <p><strong>Grade:</strong> 5</p>
+    <p><strong>Subject:</strong> ICT</p>
+    <p><strong>Topic:</strong> OpenOffice Impress</p>
+    <p><strong>Number of questions:</strong> 11</p>
+    <button onclick="startQuiz()" style="padding: 15px 30px; font-size: 18px; font-family: inherit;">Start Quiz</button>
+</div>
+
+<div id="quiz-container">
+    <div id="game-area" class="hidden">
+        <div id="top-bar">
+            <div style="width: 50px;"></div>
+            <div id="timer">45s</div>
+            <div id="score-display">Score: 0</div>
+        </div>
+        <div id="q-text"></div>
+        <div id="q-image-container"></div>
+        <div id="options"></div>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<div id="confetti"></div>
+
+<script>
+    const questions = [
+        { q: "Arjun wants to create a digital presentation about his pet dog. Which software from the OpenOffice suite should he use?", a: "OpenOffice Impress", options: ["OpenOffice Writer", "OpenOffice Impress", "OpenOffice Calc", "OpenOffice Draw"], hint: "Which tool is specifically designed for creating electronic presentations?" },
+        { q: "Rahul sees eight green points surrounding an image. What happens if he clicks and drags a corner point?", img: "assets/G5_Chap 5 _Q2.png", a: "Both height and width are adjusted together", options: ["The object rotates", "The object is deleted", "Both height and width are adjusted together", "Only the height changes"], hint: "Corner handles in graphics programs usually maintain the aspect ratio." },
+        { q: "Simran wants the same background and font style for all 15 slides without formatting them one by one. What should she use?", a: "Slide Master", options: ["Slide Sorter", "Slide Master", "Custom Animation", "Gallery"], hint: "This feature controls the basic formatting for all slides in a presentation." },
+        { q: "Rohan is trying to open a file: Step 1: Click File. Step 2: Click Open. Step 3: Select file. Step 4: Click 'Save'. Which step is incorrect?", a: "Step 4", options: ["Step 1", "Step 2", "Step 3", "Step 4"], hint: "If Rohan wants to open a file, clicking 'Save' is the wrong action." },
+        { q: "The '6x6 Rule' is used for slide readability. Based on this rule, what is the maximum number of words recommended per bullet point?", a: "6 words", options: ["2 words", "6 words", "10 words", "12 words"], hint: "The name of the rule often suggests the numbers used." },
+        { q: "Which of these is NOT a valid 'View' option in OpenOffice Impress?", a: "Calculator View", options: ["Normal View", "Outline View", "Calculator View", "Slide Sorter View"], hint: "Think about which item is definitely not related to presentation editing." },
+        { q: "Priya finished her slides and wants to see how they look on the full screen. Which shortcut key starts the Slide Show?", a: "F5", options: ["Ctrl + S", "Ctrl + N", "F5", "Esc"], hint: "This standard function key is widely used to start presentations." },
+        { q: "Statement: It is better to use a high-contrast color scheme. Reason: It makes the text easier for the audience to read from a distance.", a: "Both are true and Reason explains Statement", options: ["Statement is true, Reason is false", "Both are true and Reason explains Statement", "Both are false", "Statement is false, Reason is true"], hint: "High contrast ensures readability for everyone in the room." },
+        { q: "Meera inserted a picture that is upside down. How can she fix this in Impress?", a: "Use red points to rotate the object", options: ["Delete and re-insert", "Use red points to rotate the object", "Use green points to resize", "Change the slide layout"], hint: "Rotation handles are typically a specific color." },
+        { q: "Ayan has too many paragraphs in his presentation. What is the most effective way to present his long list of points?", a: "Use Bullets and Numbering", options: ["Use smaller font size", "Use Bullets and Numbering", "Put everything on one slide", "Remove the titles"], hint: "Formatting long text into lists makes it easier to read." },
+        { q: "You have 10 slides in the wrong order. Which view allows you to see 'thumbnails' of all slides so you can drag and reorder them easily?", a: "Slide Sorter View", options: ["Normal View", "Outline View", "Slide Sorter View", "Slide Master"], hint: "This view is specifically designed for sorting and reordering slides." }
+    ];
+
+    let currentQ = 0, score = 0, attempts = 0, timer, timeLeft = 45;
+
+    window.addEventListener('load', () => setTimeout(() => {
+        document.getElementById('logo-screen').classList.add('hidden');
+        document.getElementById('intro-screen').classList.remove('hidden');
+    }, 5000));
+
+    function startQuiz() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        clearInterval(timer);
+        attempts = 0; timeLeft = 45;
+        document.getElementById('timer').innerText = timeLeft + "s";
+        document.getElementById('feedback').className = "";
+        document.getElementById('feedback').innerText = "";
+        
+        const q = questions[currentQ];
+        document.getElementById('q-text').innerHTML = (currentQ + 1) + ". " + q.q;
+        document.getElementById('q-image-container').innerHTML = q.img ? `<img src="${q.img}">` : "";
+        const optDiv = document.getElementById('options');
+        optDiv.innerHTML = "";
+        q.options.forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = o;
+            btn.onclick = () => checkAnswer(o);
+            optDiv.appendChild(btn);
+        });
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if(timeLeft <= 0) { clearInterval(timer); alert("Time's up!"); nextQuestion(); }
+        }, 1000);
+    }
+
+    function checkAnswer(choice) {
+        const feedback = document.getElementById('feedback');
+        if(choice === questions[currentQ].a) {
+            score++;
+            document.getElementById('score-display').innerText = "Score: " + score;
+            feedback.className = 'feedback-correct';
+            feedback.innerText = "Correct!";
+            new Audio('assets/correct.mp3').play();
+            document.getElementById('confetti').style.display = 'block';
+            setTimeout(() => document.getElementById('confetti').style.display = 'none', 1000);
+            setTimeout(nextQuestion, 1500);
+        } else {
+            attempts++;
+            new Audio('assets/wrong.mp3').play();
+            if(attempts < 2) {
+                feedback.className = 'hint-box';
+                feedback.innerText = "Hint: " + questions[currentQ].hint;
+            } else {
+                feedback.className = 'feedback-correct';
+                feedback.innerText = "Correct answer was: " + questions[currentQ].a;
+                setTimeout(nextQuestion, 2000);
+            }
+        }
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if(currentQ < questions.length) {
+            renderQuestion();
+        } else {
+            showResults();
+        }
+    }
+
+    function showResults() {
+        document.getElementById('game-area').classList.add('hidden');
+        const container = document.getElementById('quiz-container');
+        let msg = "", percentage = (score / questions.length) * 100;
+        if(percentage >= 75) msg = "Good job";
+        else if(percentage >= 40) msg = "Review this chapter and try again";
+        else msg = "Let’s practise more";
+        container.innerHTML = `<h1>Quiz Finished!</h1><p style="font-size: 1.5rem;">Score: ${score}/${questions.length}</p><p style="font-size: 1.2rem; font-weight: bold;">${msg}</p><button onclick="location.reload()" style="padding: 15px 30px; margin-top: 20px; cursor: pointer;">Restart Quiz</button>`;
+    }
+</script>
+</body>
+</html>
