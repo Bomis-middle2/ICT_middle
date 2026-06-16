@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ICT Chapter 6 - Interactive Quiz</title>
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        * { box-sizing: border-box; }
+        body { 
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+            background: #f4f4f9; 
+            margin: 0; 
+            min-height: 100vh;
+            display: flex; 
+            justify-content: center; 
+            align-items: center;
+            padding: 10px;
+        }
+        #quiz-container { 
+            background: white; 
+            width: 100%; 
+            max-width: 600px; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 10px rgba(0,0,0,0.1); 
+            text-align: center;
+        }
+        #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .option-btn { 
+            border: 2px solid blue; 
+            border-radius: 12px; 
+            padding: 16px; 
+            margin: 8px 0; 
+            background: white; 
+            cursor: pointer; 
+            display: block; 
+            width: 100%; 
+            font-size: 1rem;
+            font-weight: 600; 
+            font-family: inherit; 
+            transition: background 0.2s;
+        }
+        .option-btn:active { background: #eef; }
+        .hint-box { background: #ffcccc; padding: 12px; border-radius: 8px; margin-top: 15px; color: #333; font-weight: bold; }
+        .feedback-correct { border: 2px solid green; background: #d4edda; padding: 12px; border-radius: 8px; color: #155724; font-weight: bold; margin-top: 15px; }
+        #logo-screen, #intro-screen { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: white; display: flex; flex-direction: column; 
+            justify-content: center; align-items: center; z-index: 9999; 
+            padding: 20px;
+        }
+        .hidden { display: none !important; }
+        #q-text { font-weight: bold; font-size: 1.1rem; margin-bottom: 20px; text-align: left; line-height: 1.4; }
+        code { background: #eee; padding: 2px 4px; border-radius: 4px; font-family: monospace; }
+        @media (max-width: 480px) {
+            h1 { font-size: 1.5rem; }
+            #q-text { font-size: 1rem; }
+            .option-btn { padding: 14px; font-size: 0.95rem; }
+        }
+    </style>
+</head>
+<body>
+
+<div id="logo-screen"><img src="assets/innovine-logo.png" alt="Logo" style="max-width: 80%;"></div>
+
+<div id="intro-screen" class="hidden">
+    <h1>Images in HTML</h1>
+    <p><strong>Grade 7 | ICT Chapter 6</strong></p>
+    <button onclick="startQuiz()" style="padding: 15px 40px; font-size: 1.2rem; cursor: pointer; border-radius: 8px;">Start Quiz</button>
+</div>
+
+<div id="quiz-container">
+    <div id="game-area" class="hidden">
+        <div id="top-bar">
+            <div id="timer">45s</div>
+            <div id="score-display">Score: 0</div>
+        </div>
+        <div id="q-text"></div>
+        <div id="options"></div>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "A travel blogger wants to include high-resolution photos of mountains on her website. According to the chapter, why should she be careful about using images with very large file sizes?", a: "B) They take longer to download and slow down the webpage.", options: ["A) Large images automatically get deleted by web browsers.", "B) They take longer to download and slow down the webpage.", "C) They cannot be formatted using HTML tags.", "D) They change their colors when uploaded to the internet."], hint: "Think about the impact of large files on loading speed." },
+        { q: "A school website needs an image that balances a small file size with a high level of quality. Which two image file formats are best recommended for this purpose?", a: "C) GIF and JPEG", options: ["A) BMP and TIFF", "B) PNG and PDF", "C) GIF and JPEG", "D) TXT and HTML"], hint: "Look for common web-friendly image formats." },
+        { q: "A student writes the code <code>&lt;img src=\"school.jpg\"&gt;</code> but the image doesn't show up on the browser. The file <code>school.jpg</code> is located in a 'Pictures' folder, while the HTML file is on the 'Desktop'. What is the most likely cause of this error?", a: "B) The image and HTML code are not in the same folder, and the full path wasn't specified.", options: ["A) The HTML language does not support .jpg files.", "B) The image and HTML code are not in the same folder, and the full path wasn't specified.", "C) The <img> tag is an empty element.", "D) The image file is too large to be displayed."], hint: "Consider the location of the files relative to each other." },
+        { q: "An e-commerce site wants to ensure that visually impaired users using screen readers can understand what a product image represents. Which attribute must they include in the <img> tag?", a: "D) alt", options: ["A) src", "B) height", "C) width", "D) alt"], hint: "This attribute provides alternative information for an image." },
+        { q: "A developer wants a company logo to fit perfectly inside a box that is 150 pixels vertically and 200 pixels horizontally. Which attributes should they add to the <img> tag?", a: "B) height and width", options: ["A) top and bottom", "B) height and width", "C) size and dimension", "D) length and scale"], hint: "These attributes define the physical size of the image on the screen." },
+        { q: "A user on a very slow mobile network is trying to read a news article. The pictures fail to load, but the user sees text boxes saying 'Protest in City Square' instead. What HTML attribute made this alternative text possible?", a: "B) alt", options: ["A) title", "B) alt", "C) src", "D) href"], hint: "It is the same attribute used for accessibility." },
+        { q: "A student is confused about why their <img> code is causing a validation error when they add a closing </img> tag at the end. What is the correct explanation?", a: "C) The <img> tag is an empty tag and does not require a closing tag.", options: ["A) The closing tag should be written as <img/>.", "B) The <img> tag must be placed inside the <head> section.", "C) The <img> tag is an empty tag and does not require a closing tag.", "D) Images cannot be closed unless they have a border."], hint: "The image tag does not contain content between tags." },
+        { q: "A web designer wants to display a live weather map hosted securely on www.weather.com/map.jpg without downloading it to their own computer. How can they achieve this?", a: "A) By using the full URL https://www.weather.com/map.jpg as the value for the src attribute.", options: ["A) By using the full URL https://www.weather.com/map.jpg as the value for the src attribute.", "B) By typing the website name in the alt attribute.", "C) By downloading it first, as external images are not allowed in HTML.", "D) By using the <link> tag instead of the <img> tag."], hint: "You can point the src attribute to a web address." },
+        { q: "You are tutoring a friend who incorrectly believes that graphics \"live\" directly inside the HTML text file once coded. How would you correct them based on the chapter?", a: "B) Graphics are stored in separate files (like .jpg or .png) and are only \"called\" into the HTML document.", options: ["A) Graphics are permanently merged into the HTML file during saving.", "B) Graphics are stored in separate files (like .jpg or .png) and are only \"called\" into the HTML document.", "C) Graphics are converted into text symbols by the web browser.", "D) Graphics are stored in the computer's temporary memory, not files."], hint: "The HTML file just provides a link to the external image file." },
+        { q: "A beginner sets up an image using the code <code>&lt;img alt=\"A cute dog\" height=\"200\" width=\"200\"&gt;</code> but the picture doesn't appear. Which absolutely mandatory attribute is missing?", a: "C) src", options: ["A) border", "B) align", "C) src", "D) style"], hint: "This attribute tells the browser where to find the image." },
+        { q: "A digital artist wants to upload an uncompressed, extremely high-quality image to their online portfolio. Based on HTML best practices regarding 'optimum size', what should they do before uploading?", a: "B) Reduce it to a size that is the smallest possible without heavily affecting the quality.", options: ["A) Upload the largest size possible to ensure maximum clarity.", "B) Reduce it to a size that is the smallest possible without heavily affecting the quality.", "C) Change the extension to .html so it loads faster.", "D) Break the image into multiple smaller text files."], hint: "Efficiency and quality balance is key." },
+        { q: "In the code <code>&lt;img src=\"diagram.gif\" alt=\"Science Diagram\"&gt;</code>, what exactly does 'diagram.gif' represent?", a: "C) The source file name of the image being called into the webpage.", options: ["A) The alternative text to be spoken by the computer.", "B) The folder where the HTML file is saved.", "C) The source file name of the image being called into the webpage.", "D) The dimensions of the image in pixels."], hint: "It is the value of the src attribute." },
+        { q: "A user inspects an image tag that is coded perfectly: <code>&lt;img src=\"tree.jpg\" alt=\"A big tree\"&gt;</code>. What will happen when this webpage is loaded on a fast, normal web browser?", a: "C) The picture of the tree will display, and the alt text will remain hidden.", options: ["A) Only the text \"A big tree\" will be displayed.", "B) Both the picture and the text \"A big tree\" will be displayed side-by-side.", "C) The picture of the tree will display, and the alt text will remain hidden.", "D) The browser will ask the user to download the image."], hint: "The alt text is only shown if the image fails to load." },
+        { q: "A web developer is trying to organize their project folder. They have a file named index.html and an image named banner.png. To ensure the simplest src attribute coding (e.g., src=\"banner.png\"), where must both files be kept?", a: "B) In the same folder/directory.", options: ["A) In two completely separate hard drives.", "B) In the same folder/directory.", "C) The image must be on the desktop, and the HTML in the documents folder.", "D) They must be zipped into a single archive."], hint: "If they are in the same location, you don't need a complex path." },
+        { q: "Which of the following best defines an 'image file format' like JPEG or GIF, as described in the text?", a: "A) A standardised way of arranging and storing digital images.", options: ["A) A standardised way of arranging and storing digital images.", "B) A type of HTML tag used to create animations.", "C) A physical piece of hardware used to view pictures.", "D) A network protocol for downloading files."], hint: "It refers to how the image data is structured." }
+    ];
+
+    let currentQ = 0, score = 0, attempts = 0, timer, timeLeft = 45;
+    const correctSound = new Audio('assets/correct.mp3');
+    const wrongSound = new Audio('assets/wrong.mp3');
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('logo-screen').classList.add('hidden');
+            document.getElementById('intro-screen').classList.remove('hidden');
+        }, 2000); // Reduced to 2 seconds for faster loading
+    });
+
+    function startQuiz() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        clearInterval(timer);
+        attempts = 0; timeLeft = 45;
+        document.getElementById('timer').innerText = timeLeft + "s";
+        document.getElementById('feedback').className = "";
+        document.getElementById('feedback').innerText = "";
+        
+        const q = questions[currentQ];
+        document.getElementById('q-text').innerHTML = (currentQ + 1) + ". " + q.q;
+        const optDiv = document.getElementById('options');
+        optDiv.innerHTML = "";
+        q.options.forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = o;
+            btn.onclick = () => checkAnswer(o);
+            optDiv.appendChild(btn);
+        });
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if(timeLeft <= 0) { clearInterval(timer); nextQuestion(); }
+        }, 1000);
+    }
+
+    function checkAnswer(choice) {
+        const feedback = document.getElementById('feedback');
+        if(choice === questions[currentQ].a) {
+            score++;
+            document.getElementById('score-display').innerText = "Score: " + score;
+            feedback.className = 'feedback-correct';
+            feedback.innerText = "Correct!";
+            correctSound.play();
+            confetti();
+            setTimeout(nextQuestion, 1000);
+        } else {
+            attempts++;
+            wrongSound.play();
+            if(attempts < 2) {
+                feedback.className = 'hint-box';
+                feedback.innerText = "Hint: " + questions[currentQ].hint;
+            } else {
+                feedback.className = 'feedback-correct';
+                feedback.innerText = "Correct answer was: " + questions[currentQ].a;
+                setTimeout(nextQuestion, 2000);
+            }
+        }
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if(currentQ < questions.length) renderQuestion();
+        else {
+            document.getElementById('game-area').innerHTML = `<h1>Quiz Finished!</h1><p style="font-size: 1.5rem;">Score: ${score}/${questions.length}</p><button onclick="location.reload()" style="padding: 15px 30px; cursor: pointer;">Restart Quiz</button>`;
+        }
+    }
+</script>
+</body>
+</html>
