@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Website Creation in Weebly - Interactive Quiz</title>
+    <!-- Adding confetti library for the effect -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.3/dist/confetti.browser.min.js"></script>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f4f4f9; display: flex; justify-content: center; padding: 20px; margin: 0; }
+        #quiz-container { background: white; width: 95%; max-width: 600px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; }
+        #top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; font-weight: bold; }
+        .option-btn { border: 2px solid blue; border-radius: 15px; padding: 15px; margin: 10px 0; background: white; cursor: pointer; display: block; width: 100%; font-weight: bold; font-family: inherit; }
+        .hint-box { background: #ffcccc; padding: 10px; border-radius: 8px; margin-top: 15px; color: #333; font-weight: bold; }
+        .feedback-correct { border: 2px solid green; background: #d4edda; padding: 10px; border-radius: 8px; color: #155724; font-weight: bold; margin-top: 15px; }
+        #logo-screen, #intro-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: white; display: flex; flex-direction: column; justify-content: center; align-items: center; z-index: 9999; }
+        .hidden { display: none !important; }
+        #q-text { font-weight: bold; font-size: 1.0rem; margin-bottom: 15px; text-align: left; }
+    </style>
+</head>
+<body>
+
+<div id="logo-screen"><img src="assets/innovine-logo.png" alt="Logo"></div>
+
+<div id="intro-screen" class="hidden">
+    <h1>Website Creation in Weebly</h1>
+    <p><strong>Grade:</strong> 6</p>
+    <p><strong>Subject:</strong> ICT</p>
+    <p><strong>Topic:</strong> Chapter 5 - Weebly Website Builder</p>
+    <button onclick="startQuiz()" style="padding: 15px 30px; font-size: 18px; font-family: inherit; cursor: pointer;">Start Quiz</button>
+</div>
+
+<div id="quiz-container">
+    <div id="game-area" class="hidden">
+        <div id="top-bar">
+            <div id="timer">45s</div>
+            <div id="score-display">Score: 0</div>
+        </div>
+        <div id="q-text"></div>
+        <div id="options"></div>
+        <div id="feedback"></div>
+    </div>
+</div>
+
+<script>
+    const questions = [
+        { q: "A local bakery wants to create a website quickly but the owner does not know how to code in HTML. Which feature of platforms like Weebly makes it ideal for them?", a: "B) It offers a user-friendly drag-and-drop interface.", options: ["A) It requires writing complex HTML tags.", "B) It offers a user-friendly drag-and-drop interface.", "C) It only works for professional web developers.", "D) It creates offline documents."], hint: "Weebly simplifies building by allowing you to move elements visually." },
+        { q: "Rahul loves traveling and wants to write daily updates about his trips so his friends can read his latest adventures first. Which type of website should he create?", a: "B) Blog", options: ["A) Online Store", "B) Blog", "C) E-commerce site", "D) Static Image Gallery"], hint: "Blogs are designed for regular, timely posts." },
+        { q: "Meera makes handmade jewelry and wants to sell them online where customers can browse products and pay directly. Which type of website does she need?", a: "A) Online Store", options: ["A) Online Store", "B) Blog", "C) Personal Profile", "D) Social Networking Site"], hint: "She needs features to manage inventory and payments." },
+        { q: "After designing a website for her school club, Riya wants to make it live on the internet. What unique requirement must she secure so people can find her site's address?", a: "C) A domain name", options: ["A) An email password", "B) A computer server", "C) A domain name", "D) An HTML tag"], hint: "This is the web address users type in the browser." },
+        { q: "A student wants to publish his project website but does not have money to pay an annual fee for a custom web address. How can he still publish his Weebly website?", a: "B) By selecting Weebly's free domain/subdomain option.", options: ["A) By using a friend's email address.", "B) By selecting Weebly's free domain/subdomain option.", "C) He cannot publish it without paying.", "D) By printing the web pages."], hint: "Weebly provides a free option that includes their brand in the address." },
+        { q: "A company wants its logo and brand name to appear consistently at the top of their Weebly site. Which default textbox area in the Site Editor should they edit?", a: "C) My Site textbox", options: ["A) Publish button", "B) Element pane", "C) My Site textbox", "D) Menu bar"], hint: "This area handles site-wide identity headers." },
+        { q: "The school sports captain wants to create separate sections for Cricket, Football, and Basketball on the sports website. Which tab from the Menu bar should he use to add these new sections?", a: "A) Pages tab", options: ["A) Pages tab", "B) Build tab", "C) Settings tab", "D) Theme tab"], hint: "To add or manage different pages, use the tab designated for page structure." },
+        { q: "Sarah wants to insert a map to show her store's physical location. Where will she find the Map element in the Weebly editor?", a: "C) In the Drag and Drop Element Pane under the Build tab", options: ["A) Under the Pages tab", "B) In the Text Formatting bar", "C) In the Drag and Drop Element Pane under the Build tab", "D) Inside the My Site box"], hint: "All interactive building blocks are located in the Build tab." },
+        { q: "John dragged a Text element to his page but wants to make the text bold and change its color. How can he access the text formatting options?", a: "B) By clicking inside the text box to make the text formatting bar appear.", options: ["A) By clicking the Publish button.", "B) By clicking inside the text box to make the text formatting bar appear.", "C) By right-clicking the desktop.", "D) By going to the Pages tab."], hint: "You must select the text or click the element to reveal the editing toolbar." },
+        { q: "A charity website has a 'Donate Now' button. When people click it, it should open a donation form on another page. Which option in the Button popup window makes this connection?", a: "A) Link", options: ["A) Link", "B) Button Style", "C) Position", "D) Spacing"], hint: "The button needs a destination reference to connect to another page." },
+        { q: "To add a picture of the school principal on the homepage, what is the correct sequence of actions in Weebly?", a: "B) Drag the Image element, click Upload Image, and select the photo from the computer.", options: ["A) Drag the Text element, type 'Principal', and print.", "B) Drag the Image element, click Upload Image, and select the photo from the computer.", "C) Click Pages, select '+', and choose 'Image'.", "D) Type HTML code for an image in the My Site box."], hint: "You need the specific tool for images." },
+        { q: "An event organizer added a 'Contact Form' at the top of the page but later decides it would look better at the bottom. Which element option should she use to easily fix this?", a: "D) Move", options: ["A) Delete", "B) Format", "C) Copy", "D) Move"], hint: "This allows you to change an element's location on the page." },
+        { q: "What must a user be very careful about before using the 'Delete' option on an element like an image or text paragraph in Weebly?", a: "B) Once deleted, the element cannot be brought back.", options: ["A) It deletes the entire website immediately.", "B) Once deleted, the element cannot be brought back.", "C) It charges a fee to delete elements.", "D) It requires an internet password."], hint: "Deletion removes the content permanently from the page." },
+        { q: "Kiran has finished dragging and dropping all her images and text. Her website looks complete in the editor, but her friends cannot see it on the internet yet. What is the final step she must perform?", a: "C) Click the Publish button.", options: ["A) Click the Start Editing button.", "B) Click the Move button.", "C) Click the Publish button.", "D) Change the Theme."], hint: "This is the trigger that pushes your edits to the live web." }
+    ];
+
+    let currentQ = 0, score = 0, attempts = 0, timer, timeLeft = 45;
+    
+    // Audio objects
+    const correctSound = new Audio('assets/correct.mp3');
+    const wrongSound = new Audio('assets/wrong.mp3');
+
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            document.getElementById('logo-screen').classList.add('hidden');
+            document.getElementById('intro-screen').classList.remove('hidden');
+        }, 5000);
+    });
+
+    function startQuiz() {
+        document.getElementById('intro-screen').classList.add('hidden');
+        document.getElementById('game-area').classList.remove('hidden');
+        renderQuestion();
+    }
+
+    function renderQuestion() {
+        clearInterval(timer);
+        attempts = 0; timeLeft = 45;
+        document.getElementById('timer').innerText = timeLeft + "s";
+        document.getElementById('feedback').className = "";
+        document.getElementById('feedback').innerText = "";
+        
+        const q = questions[currentQ];
+        document.getElementById('q-text').innerHTML = (currentQ + 1) + ". " + q.q;
+        const optDiv = document.getElementById('options');
+        optDiv.innerHTML = "";
+        q.options.forEach(o => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = o;
+            btn.onclick = () => checkAnswer(o);
+            optDiv.appendChild(btn);
+        });
+
+        timer = setInterval(() => {
+            timeLeft--;
+            document.getElementById('timer').innerText = timeLeft + "s";
+            if(timeLeft <= 0) { clearInterval(timer); nextQuestion(); }
+        }, 1000);
+    }
+
+    function checkAnswer(choice) {
+        const feedback = document.getElementById('feedback');
+        if(choice === questions[currentQ].a) {
+            score++;
+            document.getElementById('score-display').innerText = "Score: " + score;
+            feedback.className = 'feedback-correct';
+            feedback.innerText = "Correct!";
+            correctSound.play(); // Play correct sound
+            confetti(); // Trigger confetti
+            setTimeout(nextQuestion, 1000);
+        } else {
+            attempts++;
+            wrongSound.play(); // Play wrong sound
+            if(attempts < 2) {
+                feedback.className = 'hint-box';
+                feedback.innerText = "Hint: " + questions[currentQ].hint;
+            } else {
+                feedback.className = 'feedback-correct';
+                feedback.innerText = "Correct answer was: " + questions[currentQ].a;
+                setTimeout(nextQuestion, 2000);
+            }
+        }
+    }
+
+    function nextQuestion() {
+        currentQ++;
+        if(currentQ < questions.length) renderQuestion();
+        else {
+            document.getElementById('game-area').innerHTML = `<h1>Quiz Finished!</h1><p>Score: ${score}/${questions.length}</p><button onclick="location.reload()" style="padding: 15px 30px; cursor: pointer;">Restart Quiz</button>`;
+        }
+    }
+</script>
+</body>
+</html>
