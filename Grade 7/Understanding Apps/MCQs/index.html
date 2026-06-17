@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Grade 7 ICT - Chapter 7 Interactive Quiz</title>
+    <style>
+        :root {
+            --primary-color: #2b579a;
+            --secondary-color: #e2e9f3;
+            --success-color: #2bc474;
+            --error-color: #e74c3c;
+            --text-dark: #2c3e50;
+            --text-light: #ffffff;
+            --background: #f8f9fa;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: var(--background);
+            color: var(--text-dark);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 15px;
+        }
+
+        .quiz-container {
+            background: white;
+            width: 100%;
+            max-width: 650px;
+            border-radius: 12px;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.1);
+            overflow: hidden;
+            position: relative;
+            min-height: 450px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        /* Splash Screen (Fixed Fail-Safe Display) */
+        #splash-screen {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 1;
+            transition: opacity 0.5s ease, visibility 0.5s;
+        }
+
+        #splash-screen img {
+            max-width: 220px;
+            height: auto;
+            margin-bottom: 20px;
+        }
+
+        .loader {
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--secondary-color);
+            border-top: 4px solid var(--primary-color);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Views Layout */
+        .view {
+            display: none;
+            padding: 30px;
+            flex-direction: column;
+            flex-grow: 1;
+        }
+
+        .view.active {
+            display: flex;
+        }
+
+        /* Header / Controls */
+        .quiz-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid var(--secondary-color);
+            padding: 15px 30px 15px 30px;
+            background: #ffffff;
+        }
+
+        .controls {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .btn-audio {
+            background: none;
+            border: none;
+            font-size: 24px;
+            cursor: pointer;
+            padding: 5px;
+        }
+
+        /* Intro Screen */
+        .intro-title {
+            color: var(--primary-color);
+            font-size: 26px;
+            margin-bottom: 15px;
+            text-align: center;
+        }
+
+        .meta-info {
+            background: var(--secondary-color);
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 25px;
+            font-size: 16px;
+            line-height: 1.6;
+        }
+
+        /* Interactive Buttons */
+        .btn-primary {
+            background-color: var(--primary-color);
+            color: white;
+            border: none;
+            padding: 14px 28px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: background 0.2s;
+            width: 100%;
+            margin-top: auto;
+        }
+
+        .btn-primary:hover {
+            background-color: #1e3d6b;
+        }
+
+        /* Question Layout */
+        .progress-bar-container {
+            width: 100%;
+            height: 6px;
+            background-color: var(--secondary-color);
+            border-radius: 3px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .progress-bar {
+            height: 100%;
+            background-color: var(--primary-color);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-meta {
+            display: flex;
+            justify-content: space-between;
+            font-weight: bold;
+            color: #666;
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+
+        .timer-text {
+            color: var(--error-color);
+        }
+
+        .question-text {
+            font-size: 18px;
+            font-weight: 600;
+            line-height: 1.5;
+            margin-bottom: 20px;
+            white-space: pre-line;
+        }
+
+        /* Options layout */
+        .options-container {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .option-btn {
+            background-color: white;
+            border: 2px solid var(--secondary-color);
+            border-radius: 8px;
+            padding: 14px 18px;
+            text-align: left;
+            font-size: 16px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            width: 100%;
+            display: block;
+        }
+
+        .option-btn:hover:not(:disabled) {
+            background-color: var(--secondary-color);
+            border-color: #b0c4de;
+        }
+
+        .option-btn.correct {
+            background-color: #d4edda !important;
+            border-color: var(--success-color) !important;
+            color: #155724;
+            font-weight: bold;
+        }
+
+        .option-btn.wrong {
+            background-color: #f8d7da !important;
+            border-color: var(--error-color) !important;
+            color: #721c24;
+        }
+
+        /* Feedback Boxes */
+        .feedback-box {
+            padding: 15px;
+            border-radius: 8px;
+            margin-top: 10px;
+            margin-bottom: 15px;
+            font-size: 15px;
+            line-height: 1.5;
+            display: none;
+            animation: fadeIn 0.3s ease-in-out;
+            white-space: pre-line;
+        }
+
+        .feedback-box.hint {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+            color: #856404;
+        }
+
+        .feedback-box.explanation {
+            background-color: #e2f0d9;
+            border-left: 5px solid var(--success-color);
+            color: #385723;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-5deg); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Results Display */
+        .result-score {
+            font-size: 48px;
+            font-weight: bold;
+            color: var(--primary-color);
+            text-align: center;
+            margin: 20px 0;
+        }
+
+        .result-msg {
+            font-size: 20px;
+            font-weight: 600;
+            text-align: center;
+            margin-bottom: 30px;
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        #confetti-canvas {
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 99;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="quiz-container">
+        <div id="splash-screen">
+            <img src="assets/innovine-logo.png" alt="Innovine Logo" id="logo-img">
+            <h2 id="logo-placeholder" style="color: var(--primary-color); margin-bottom: 20px; font-weight: bold; tracking-letter: 2px;"></h2>
+            <div class="loader"></div>
+        </div>
+
+        <canvas id="confetti-canvas"></canvas>
+
+        <div class="quiz-header">
+            <div class="score-tracker" id="score-display">Score: 0</div>
+            <div class="controls">
+                <button class="btn-audio" id="audio-toggle" title="Toggle Sound">🔊</button>
+            </div>
+        </div>
+
+        <div id="intro-view" class="view active">
+            <h1 class="intro-title">Grade 7 ICT — Interactive Practice</h1>
+            <div class="meta-info">
+                <p><strong>Grade:</strong> 7</p>
+                <p><strong>Subject:</strong> ICT</p>
+                <p><strong>Topic:</strong> Chapter 7: Understanding Apps</p>
+                <p><strong>Total Questions:</strong> <span id="total-q-count">10</span></p>
+            </div>
+            <button class="btn-primary" onclick="startQuiz()">Start Practice</button>
+        </div>
+
+        <div id="question-view" class="view">
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progress"></div>
+            </div>
+            <div class="question-meta">
+                <span id="question-number">Question 1 of 10</span>
+                <span class="timer-text">⏱️ <span id="timer-count">45</span>s</span>
+            </div>
+            <div class="question-text" id="question-text">
+                Question content
+            </div>
+            <div class="options-container" id="options-block">
+                </div>
+            <div class="feedback-box" id="feedback-block"></div>
+            <button class="btn-primary" id="action-btn" style="display:none;" onclick="handleActionClick()">Next</button>
+        </div>
+
+        <div id="result-view" class="view">
+            <h2 class="intro-title">Practice Completed!</h2>
+            <div class="result-score" id="final-score-text">0%</div>
+            <div class="result-msg" id="final-message">Feedback placeholder</div>
+            <button class="btn-primary" onclick="restartQuiz()">Restart</button>
+        </div>
+    </div>
+
+    <script>
+        
+const quizData = [
+    {
+        q: "Sarah wants to edit a high-resolution 4K video. She notices that her computer software is much faster and more responsive than the online editor she tried. This is because the software is installed on her hard drive as a:",
+        options: ["Web app","Desktop app","Hybrid app","Progressive Web App"],
+        correct: 1,
+        hint: "It is installed directly on her computer hardware.",
+        explanation: "Desktop apps run directly on hardware and are generally faster."
+    },
+    {
+        q: "Rahul is traveling and has very little storage space left on his smartphone. He needs to check his social media but doesn't want to download an installation file. Which type of app is best for him to use?",
+        options: ["Native app","Desktop app","Web app","Custom app"],
+        correct: 2,
+        hint: "This type does not require downloading an installation file.",
+        explanation: "Web apps require minimum device memory and do not need to be downloaded."
+    },
+    {
+        q: "A developer is building an app specifically for the iPhone to ensure it can use the camera and GPS at maximum speed. She uses the Swift programming language. This is an example of a:",
+        options: ["Native app","Hybrid app","Web app","Off-the-shelf app"],
+        correct: 0,
+        hint: "It is built specifically for one device using its native language.",
+        explanation: "Native apps are built specifically for one type of device using native languages like Swift."
+    },
+    {
+        q: "You are using an app that feels like a regular mobile app and can be added to your home screen, but it was actually built using web technologies like HTML and CSS and works offline. What is this called?",
+        options: ["Desktop app","Progressive Web App (PWA)","Social Networking App","Gaming app"],
+        correct: 1,
+        hint: "It's a web-based technology that offers offline functionality.",
+        explanation: "Progressive Web Apps are built with web tech but offer offline functionality and home screen access."
+    },
+    {
+        q: "An international company uses Microsoft Teams so that employees can collaborate. This app uses web technologies but is 'wrapped' in a container to be available in the App Store. It is classified as a:",
+        options: ["Native app","Web app","Hybrid app","Productivity app only"],
+        correct: 2,
+        hint: "It combines web and native elements.",
+        explanation: "Hybrid apps combine elements of native and web apps, wrapped in a native container."
+    },
+    {
+        q: "While using a new photo-editing app, the app asks for permission to access your 'Contacts' and 'Microphone,' even though it only needs the 'Camera.' According to the safety precautions in the text, you should:",
+        options: ["Grant all permissions to ensure the app works","Avoid granting access to sensitive data unless necessary","Delete your contacts before using the app","Only use the app on public Wi-Fi"],
+        correct: 1,
+        hint: "Reviewing permissions is a key safety step to protect your data.",
+        explanation: "Avoid granting access to sensitive data unless necessary."
+    },
+    {
+        q: "Mr. Gupta wants to manage his fixed deposits, transfer funds to his son, and pay his electricity bill using his smartphone. Which category of app is he most likely to use?",
+        options: ["E-commerce Apps","Banking and Finance Apps","Productivity Apps","Entertainment Apps"],
+        correct: 1,
+        hint: "These apps allow for financial transactions.",
+        explanation: "Banking and Finance Apps allow users to perform financial transactions like fund transfers and bill payments."
+    },
+    {
+        q: "Which of the following is a disadvantage of a Web App compared to a Desktop App?",
+        options: ["It takes up too much hard drive space","It cannot run without an internet connection","It needs to be manually updated via an .exe file","It is developed specifically for Windows only"],
+        correct: 1,
+        hint: "They rely on connectivity to function.",
+        explanation: "Users cannot run web apps without internet."
+    },
+    {
+        q: "A school uses 'Google Docs' to allow students to create presentations and documents for their projects. Google Docs is categorized as a:",
+        options: ["Entertainment app","E-commerce app","Productivity app","Health & Fitness app"],
+        correct: 2,
+        hint: "It enables one to produce documents.",
+        explanation: "Productivity apps enable one to produce documents, presentations, and worksheets."
+    },
+    {
+        q: "To ensure the highest level of security, where should a user download their mobile apps from?",
+        options: ["Links sent via SMS","Third-party websites","Official stores like Google Play or Apple App Store","Public Wi-Fi login pages"],
+        correct: 2,
+        hint: "These are the trusted sources.",
+        explanation: "Official stores like Google Play or Apple App Store are the safest places to protect privacy and security."
+    }
+];
+
+
+        // State Machine Core Variables
+        let currentQuestionIndex = 0;
+        let score = 0;
+        let attemptsLeft = 2;
+        let timerInterval = null;
+        let timeRemaining = 45;
+        let audioMuted = false;
+
+        // Auditory Infrastructure Instantiation
+        const audioCorrect = new Audio('assets/correct.mp3');
+        const audioWrong = new Audio('assets/wrong.mp3');
+
+        // Document Cache Pointers
+        const splashScreen = document.getElementById('splash-screen');
+        const logoImage = document.getElementById('logo-img');
+        const logoPlaceholder = document.getElementById('logo-placeholder');
+        const introView = document.getElementById('intro-view');
+        const questionView = document.getElementById('question-view');
+        const resultView = document.getElementById('result-view');
+        const scoreDisplay = document.getElementById('score-display');
+        const audioToggle = document.getElementById('audio-toggle');
+        const totalQCountSpan = document.getElementById('total-q-count');
+
+        // Handle structural missing assets cleanly
+        logoImage.onerror = function() {
+            this.style.display = 'none';
+            logoPlaceholder.style.display = 'block';
+        };
+
+        // Execution Controller (GUARANTEED DISMISSAL TIMEOUT)
+        window.addEventListener('load', () => {
+            totalQCountSpan.textContent = quizData.length;
+            
+            // Unconditional splash screen removal loop after exactly 5000 milliseconds
+            setTimeout(() => {
+                splashScreen.style.opacity = '0';
+                setTimeout(() => {
+                    splashScreen.style.display = 'none';
+                }, 500);
+            }, 5000);
+        });
+
+        // Audio controls
+        audioToggle.addEventListener('click', () => {
+            audioMuted = !audioMuted;
+            audioToggle.textContent = audioMuted ? "❌" : "🔊";
+        });
+
+        function playSound(audioObject) {
+            if (!audioMuted) {
+                audioObject.currentTime = 0;
+                audioObject.play().catch(e => console.log("Audio waiting for interaction context channel."));
+            }
+        }
+
+        // Functional Quiz Engine Components
+        function startQuiz() {
+            introView.classList.remove('active');
+            questionView.classList.add('active');
+            currentQuestionIndex = 0;
+            score = 0;
+            updateScoreDisplay();
+            loadQuestion();
+        }
+
+        function updateScoreDisplay() {
+            scoreDisplay.textContent = `Score: ${score}`;
+        }
+
+        function loadQuestion() {
+            clearInterval(timerInterval);
+            attemptsLeft = 2;
+            timeRemaining = 45;
+            
+            const qData = quizData[currentQuestionIndex];
+            
+            document.getElementById('question-number').textContent = `Question ${currentQuestionIndex + 1} of ${quizData.length}`;
+            document.getElementById('progress').style.width = `${((currentQuestionIndex) / quizData.length) * 100}%`;
+            document.getElementById('question-text').textContent = qData.q;
+            document.getElementById('timer-count').textContent = timeRemaining;
+            
+            const feedbackBlock = document.getElementById('feedback-block');
+            feedbackBlock.style.display = 'none';
+            feedbackBlock.className = 'feedback-box';
+            
+            document.getElementById('action-btn').style.display = 'none';
+
+            const optionsBlock = document.getElementById('options-block');
+            optionsBlock.innerHTML = '';
+            
+            qData.options.forEach((option, index) => {
+                const btn = document.createElement('button');
+                btn.className = 'option-btn';
+                btn.textContent = option;
+                btn.onclick = () => submitAnswer(index, btn);
+                optionsBlock.appendChild(btn);
+            });
+
+            timerInterval = setInterval(() => {
+                timeRemaining--;
+                document.getElementById('timer-count').textContent = timeRemaining;
+                if (timeRemaining <= 0) {
+                    clearInterval(timerInterval);
+                    forceTimeoutReveal();
+                }
+            }, 1000);
+        }
+
+        function submitAnswer(selectedIndex, clickedBtn) {
+            const qData = quizData[currentQuestionIndex];
+            const optionsBlock = document.getElementById('options-block');
+            const feedbackBlock = document.getElementById('feedback-block');
+
+            if (selectedIndex === qData.correct) {
+                clearInterval(timerInterval);
+                playSound(audioCorrect);
+                triggerSparklers();
+                clickedBtn.classList.add('correct');
+                
+                if (attemptsLeft === 2) {
+                    score += 10;
+                } else {
+                    score += 5;
+                }
+                updateScoreDisplay();
+
+                Array.from(optionsBlock.children).forEach(btn => btn.disabled = true);
+                
+                feedbackBlock.innerText = `✨ Correct!\n\n${qData.explanation}`;
+                feedbackBlock.className = 'feedback-box explanation';
+                feedbackBlock.style.display = 'block';
+                
+                showNextActionControl();
+            } else {
+                attemptsLeft--;
+                clickedBtn.classList.add('wrong');
+                clickedBtn.disabled = true;
+                playSound(audioWrong);
+
+                if (attemptsLeft === 1) {
+                    feedbackBlock.innerText = `💡 Try Again!\nHint: ${qData.hint}`;
+                    feedbackBlock.className = 'feedback-box hint';
+                    feedbackBlock.style.display = 'block';
+                } else {
+                    clearInterval(timerInterval);
+                    Array.from(optionsBlock.children).forEach(btn => btn.disabled = true);
+                    optionsBlock.children[qData.correct].classList.add('correct');
+                    
+                    feedbackBlock.innerText = `Learning Review:\n\n${qData.explanation}`;
+                    feedbackBlock.className = 'feedback-box explanation';
+                    feedbackBlock.style.display = 'block';
+                    
+                    showNextActionControl();
+                }
+            }
+        }
+
+        function forceTimeoutReveal() {
+            const qData = quizData[currentQuestionIndex];
+            const optionsBlock = document.getElementById('options-block');
+            const feedbackBlock = document.getElementById('feedback-block');
+            
+            Array.from(optionsBlock.children).forEach(btn => btn.disabled = true);
+            optionsBlock.children[qData.correct].classList.add('correct');
+            
+            feedbackBlock.innerText = `⏳ Time's Up!\nLet's review the solution:\n\n${qData.explanation}`;
+            feedbackBlock.className = 'feedback-box explanation';
+            feedbackBlock.style.display = 'block';
+            
+            playSound(audioWrong);
+            showNextActionControl();
+        }
+
+        function showNextActionControl() {
+            const actionBtn = document.getElementById('action-btn');
+            actionBtn.style.display = 'block';
+            if (currentQuestionIndex === quizData.length - 1) {
+                actionBtn.textContent = "View Results";
+            } else {
+                actionBtn.textContent = "Next Question";
+            }
+        }
+
+        function handleActionClick() {
+            if (currentQuestionIndex < quizData.length - 1) {
+                currentQuestionIndex++;
+                loadQuestion();
+            } else {
+                displayFinalScoreCard();
+            }
+        }
+
+        function displayFinalScoreCard() {
+            questionView.classList.remove('active');
+            resultView.classList.add('active');
+            document.getElementById('progress').style.width = '100%';
+            
+            const maximumPossiblePoints = quizData.length * 10;
+            const percentageScored = Math.round((score / maximumPossiblePoints) * 100);
+            
+            document.getElementById('final-score-text').textContent = `${percentageScored}%`;
+            
+            const msgBlock = document.getElementById('final-message');
+            
+            if (percentageScored >= 75) {
+                msgBlock.textContent = "Good job! You have mastered this chapter.";
+                msgBlock.style.backgroundColor = "#d4edda";
+                msgBlock.style.color = "#155724";
+                triggerSparklers();
+            } else if (percentageScored >= 40) {
+                msgBlock.textContent = "Review this chapter and try again.";
+                msgBlock.style.backgroundColor = "#fff3cd";
+                msgBlock.style.color = "#856404";
+            } else {
+                msgBlock.textContent = "Let's practise more. Go through the core concepts again.";
+                msgBlock.style.backgroundColor = "#f8d7da";
+                msgBlock.style.color = "#721c24";
+            }
+        }
+
+        function restartQuiz() {
+            resultView.classList.remove('active');
+            startQuiz();
+        }
+
+        // Particle System Infrastructure (Sparklers)
+        const canvas = document.getElementById('confetti-canvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+
+        function resizeCanvas() {
+            canvas.width = canvas.parentElement.clientWidth;
+            canvas.height = canvas.parentElement.clientHeight;
+        }
+        window.addEventListener('resize', resizeCanvas);
+
+        function triggerSparklers() {
+            resizeCanvas();
+            for (let i = 0; i < 60; i++) {
+                particles.push({
+                    x: canvas.width / 2,
+                    y: canvas.height / 2 - 50,
+                    radius: Math.random() * 4 + 2,
+                    color: `hsl(${Math.random() * 360}, 80%, 60%)`,
+                    vx: (Math.random() - 0.5) * 8,
+                    vy: (Math.random() - 0.5) * 8 - 3,
+                    alpha: 1,
+                    decay: Math.random() * 0.015 + 0.015
+                });
+            }
+            if(particles.length <= 60) {
+                requestAnimationFrame(renderParticles);
+            }
+        }
+
+        function renderParticles() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            
+            particles.forEach((p, idx) => {
+                p.x += p.vx;
+                p.y += p.vy;
+                p.vy += 0.1;
+                p.alpha -= p.decay;
+                
+                ctx.save();
+                ctx.globalAlpha = p.alpha;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.radius, 0, Math.PI * 2);
+                ctx.fillStyle = p.color;
+                ctx.fill();
+                ctx.restore();
+                
+                if (p.alpha <= 0) {
+                    particles.splice(idx, 1);
+                }
+            });
+            
+            if (particles.length > 0) {
+                requestAnimationFrame(renderParticles);
+            }
+        }
+    </script>
+</body>
+</html>
